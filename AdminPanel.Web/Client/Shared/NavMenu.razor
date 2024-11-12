@@ -1,0 +1,321 @@
+﻿@inject IStateService _state
+@inject IHttpService _http
+@inject IDomainService _domain
+
+<!--=====================================
+            NAVBAR PART START
+=======================================-->
+
+<AuthorizeView>
+    <Authorized Context="auth">
+        <nav class="navbar-part">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="navbar-content">
+                            <ul class="navbar-list">
+                                <li class="navbar-item">
+                                    <a class="navbar-link" href="/">Home</a>
+                                </li>
+                                <li class="navbar-item">
+                                    <a class="navbar-link" href="RecentItems">Recent Items</a>
+                                </li>
+                                <li class="navbar-item">
+                                    <a class="navbar-link" href="FavoriteLists">Favorite Lists</a>
+                                </li>
+
+                                <li class="navbar-item dropdown-megamenu">
+                                    <a class="navbar-link dropdown-arrow" href="javascript:;">categories</a>
+                                    <div class="megamenu">
+                                        <div class="container megamenu-scroll">
+                                            <div class="row row-cols-5">
+                                                @if (categories != null && categories.Count() > 0)
+                                                    @foreach (var cat in categories)
+                                                    {
+                                                        <div class="col">
+                                                            <div class="megamenu-wrap">
+                                                                <h5 class="megamenu-title">
+                                                                    <a href="Search?id=@cat.Id&type=M">@cat.CategoryName</a>
+                                                                </h5>
+                                                                <ul class="megamenu-list">
+                                                                    @{
+                                                                        int cnt = 0;
+                                                                    }
+                                                                    @foreach (var subCat in cat.AllSubCategories)
+                                                                    {
+                                                                        <li><a href="Search?id=@subCat.Id&type=S">@subCat.SubCategoryName</a></li>
+                                                                        cnt++;
+                                                                        if (cnt >= 5)
+                                                                            break;
+                                                                    }
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+
+                                <li class="navbar-item dropdown">
+                                    <a class="navbar-link" href="History">Order History</a>
+                                </li>
+                                <li class="navbar-item dropdown">
+                                    <a class="navbar-link dropdown-arrow" href="javascript:;">Misc</a>
+                                    <ul class="dropdown-position-list">
+                                        <li><a href="specials">App Specials</a></li>
+                                        <li><a href="javascript:;">Notifications</a></li>
+                                        <li><a href="javascript:;">Important Info</a></li>
+                                    </ul>
+                                </li>
+                                <li class="navbar-item">
+                                    <a class="navbar-link" href="Login">Logout</a>
+                                </li>
+                            </ul>
+                            @if (_state.ManagedFeatures.IsShowCompanyContact)
+                            {
+                                <div class="navbar-info-group">
+                                    <div class="navbar-info">
+                                        <i class="icofont-ui-touch-phone"></i>
+                                        <p>
+                                            <small>call us</small>
+                                            <span>@(_state.CompanyPhone)</span>
+                                        </p>
+                                    </div>
+                                    <div class="navbar-info">
+                                        <i class="icofont-ui-email"></i>
+                                        <p>
+                                            <small>email us</small>
+                                            <span>@(_state.CompanyEmail)</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+    </Authorized>
+</AuthorizeView>
+<!--=====================================
+            NAVBAR PART END
+=======================================-->
+<!--=====================================
+        CATEGORY SIDEBAR PART START
+=======================================-->
+@if (categories != null && categories.Count() > 0)
+{
+    <aside class="category-sidebar">
+        <div class="category-header">
+            <h4 class="category-title">
+                <i class="fas fa-align-left"></i>
+                <span>All Categories</span>
+            </h4>
+            <button class="category-close"><i class="icofont-close"></i></button>
+        </div>
+        <ul class="category-list">
+            @foreach (var cat in categories)
+            {
+                <li class="category-item">
+                    <a class="category-link @(cat.AllSubCategories.Count() > 0 ? "dropdown-link" : "")" href="javascript:;">
+                        @*<i class="flaticon-vegetable"></i>*@
+                        <span>@cat.CategoryName</span>
+                    </a>
+                    @if (cat.AllSubCategories != null && cat.AllSubCategories.Count() > 0)
+                    {
+                        <ul class="dropdown-list">
+                            @foreach (var item in cat.AllSubCategories)
+                            {
+                                <li><a href="javascript:;">@item.SubCategoryName</a></li>
+                            }
+                        </ul>
+                    }
+                </li>
+            }
+        </ul>
+        <div class="category-footer">
+            <p>All Rights Reserved by <a href="javascript:;">Ezorders</a></p>
+        </div>
+    </aside>
+}
+
+<!--=====================================
+        CATEGORY SIDEBAR PART END
+=======================================-->
+<!--=====================================
+          NAV SIDEBAR PART START
+=======================================-->
+<aside class="nav-sidebar">
+    <div class="nav-header">
+        <a href="javascript:;"><img src="theme/images/logo.png" alt="logo"></a>
+        <button class="nav-close"><i class="icofont-close"></i></button>
+    </div>
+    <div class="nav-content">
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-profile">
+                    <a class="nav-user" href="javascript:;"><img src="theme/images/user.png" alt="user"></a>
+                    <h4 class="nav-name"><a href="userprofile">@(_state.FullName)</a></h4>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-btn">
+                    <a href="login" class="btn btn-inline">
+                        <i class="fa fa-unlock-alt"></i>
+                        <span>Login / Register</span>
+                    </a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <div class="nav-select-group">
+            <div class="nav-select">
+                <i class="icofont-world"></i>
+                <select class="select">
+                    <option value="english" selected>English</option>
+                    <option value="bangali">Bangali</option>
+                    <option value="arabic">Arabic</option>
+                </select>
+            </div>
+            <div class="nav-select">
+                <i class="icofont-money"></i>
+                <select class="select">
+                    <option value="english" selected>Doller</option>
+                    <option value="bangali">Pound</option>
+                    <option value="arabic">Taka</option>
+                </select>
+            </div>
+        </div>
+        <AuthorizeView>
+            <Authorized Context="auth">
+                <ul class="nav-list">
+                    <li><a class="nav-link" href="/"><i class="icofont-home"></i>Home</a></li>
+                    <li><a class="nav-link" href="RecentItems"><i class="icofont-page"></i>Recent Items</a></li>
+                    <li><a class="nav-link" href="FavoriteLists"><i class="icofont-book-mark"></i>User Lists</a></li>
+                    <li>
+                        <a class="nav-link dropdown-link" href="javascript:;"><i class="icofont-listine-dots"></i>Orders</a>
+                        <ul class="dropdown-list">
+                            <li><a href="javascript:;">Order Listing</a></li>
+                            <li><a href="javascript:;">Invoices</a></li>
+                        </ul>
+                    </li>
+                    <li><a class="nav-link" href="Specials"><i class="icofont-favourite"></i>App Spcials</a></li>
+                    <li><a class="nav-link" href="javascript:;"><i class="icofont-notification"></i>Notification</a></li>
+                    <li><a class="nav-link" href="javascript:;"><i class="icofont-external-link"></i>Links</a></li>
+                    <li><a class="nav-link" href="javascript:;"><i class="icofont-support-faq"></i>Help</a></li>
+
+                    <li><a class="nav-link" href="Login"><i class="icofont-logout"></i>Logout</a></li>
+
+                </ul>
+                <div class="nav-info-group">
+                    <div class="nav-info">
+                        <i class="icofont-ui-touch-phone"></i>
+                        <p>
+                            <small>call us</small>
+                            <span>@(_state.CompanyPhone)</span>
+                        </p>
+                    </div>
+                    <div class="nav-info">
+                        <i class="icofont-ui-email"></i>
+                        <p>
+                            <small>email us</small>
+                            <span>@(_state.CompanyEmail)</span>
+                        </p>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        <div class="nav-footer">
+            <p>All Rights Reserved by <a target="_blank" href="https://ezorders.us">Ezorders</a></p>
+        </div>
+    </div>
+</aside>
+<!--=====================================
+          NAV SIDEBAR PART END
+=======================================-->
+<!--=====================================
+            MOBILE-MENU PART START
+=======================================-->
+<AuthorizeView>
+    <Authorized Context="auth">
+        <div class="mobile-menu">
+            <a href="/" title="Home Page">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            @* <button class="cate-btn" title="Category List">
+            <i class="fas fa-list"></i>
+            <span>category</span>
+            </button>*@
+            <a href="RecentItems" title="Recently ordered items">
+                <i class="fas fa-history"></i>
+                <span>Recent</span>
+            </a>
+            <a href="jaascript:;" title="Order History">
+                <i class="fas fa-list-alt"></i>
+                <span>Orders</span>
+            </a>
+            <a href="/Cart" title="Cart Page">
+                <i class="fas fa-shopping-basket"></i>
+                @if (_state.IsAuthenticated)
+                {
+                    <span>cartlist</span>
+                    <sup>@_state.CartCountBO.CartCount</sup>
+                }
+            </a>
+        </div>
+    </Authorized>
+</AuthorizeView>
+<!--=====================================
+            MOBILE-MENU PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    GetAllCategoriesBO model = new();
+    IEnumerable<CategoryListBO> categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _domain.OnDataSet += SetData;
+        await base.OnInitializedAsync();
+        await Task.Delay(50);
+        await GetAllCategories();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllCategories()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.ShowSubcategories = true;
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<CategoryListBO>>>($"api/Product/GetAllMainAndSubCategories{Extensions.ConvertToQueryString(model)}", cts);
+
+        if (response.IsSuccess)
+        {
+            categories = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void SetData()
+    {
+        await GetAllCategories();
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+        _domain.OnDataSet -= SetData;
+    }
+}

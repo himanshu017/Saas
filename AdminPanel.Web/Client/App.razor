@@ -1,0 +1,25 @@
+﻿
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" >
+                <Authorizing>
+                    <div style="position:absolute; top:30vh; width:100%; text-align:center; z-index:99999;background:white">
+                        <img src="theme/images/ez-logo-dark.svg" alt="logo" style="width: 50%; height: auto;padding:20px 0px;">
+                    </div>
+                    <div class="modal-backdrop fade show"></div>
+                </Authorizing>
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

@@ -1,0 +1,248 @@
+﻿@page "/RecentItems"
+@inject ISearchService _search
+@inject IHttpService _http
+
+@implements IDisposable
+
+@if (!IsListPage)
+{
+    <PTitle Title="Recent Items" />
+    <TitleBanner Title="Recent Items" />
+}
+<!--=====================================
+            SHOP PART START
+=======================================-->
+<section class="inner-section shop-part">
+    <div class="container">
+        <div class="row content-reverse">
+            <div class="col-lg-3">
+                <FilterSidebar ProductModel="model" />
+            </div>
+            <div class="col-lg-9">
+                @if (!IsListPage)
+                {
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="top-filter">
+                                <div class="filter-show">
+                                    <label class="filter-label">Show :</label>
+                                    <RadzenDropDown @bind-Value="model.PageSize" TValue="int" Data="PageSizeSelection" class="bg-transparent" Change="@(() => GetFavoriteListItems())" />
+                                </div>
+                                @if (favLists != null && favLists.Count() > 0)
+                                {
+                                    <div class="filter-short">
+                                        <label class="filter-label">Favorite list :</label>
+                                        <RadzenDropDown class="bg-transparent" TValue="long" @bind-Value="@model.FavListId"
+                                                Data="@favLists" TextProperty="Name" ValueProperty="Id" Change="@(() => GetFavoriteListItems())" />
+                                    </div>
+                                }
+                                <div class="filter-action">
+                                    <a href="javascript:;" title="Column View" @onclick="@(() => detailView = false)"><i class="fas fa-th"></i></a>
+                                    <a href="javascript:;" title="Detail View" @onclick="@(() => detailView = true)"><i class="fas fa-th-list"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (products != null && products.Count() > 0)
+                {
+                    <div class='@(detailView ? "row" : "row row-cols-2 row-cols-md-3 row-cols-lg-3 row-cols-xl-4")'>
+                        @foreach (var prod in products)
+                        {
+                            <ProductDisplay Prod="prod" IsFavList="true" IsDetailView="detailView"
+                                    IsDefaultList="IsDefaultList()"
+                                    OnDeleteItemFromList="@DeleteItemFromList" />
+                        }
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="bottom-paginate d-block">
+                                @if (products != null && products.Count() > 0)
+                                {
+                                    <RadzenPager ShowPagingSummary="true"
+                                         PagingSummaryFormat="@pagingSummaryFormat"
+                                         HorizontalAlign="HorizontalAlign.Right"
+                                         Count="@totalRecords"
+                                         PageSize="@model.PageSize"
+                                         PageNumbersCount="5"
+                                         PageChanged="@PageChanged" />
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-lg-12 text-center mt-5">
+                        <RadzenIcon Icon="hide_image" class="fa-5x" />
+                        <h3><strong>No Products Found</strong></h3>
+                        <h4>Please choose a different list or try the search bar at top to search all items</h4>
+                        @*<a href="#" class="btn btn-primary cart-btn-transform m-3" data-abc="true">continue shopping</a>*@
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+            SHOP PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<FavoriteListBO> favLists;
+    IEnumerable<ProductListBO> products;
+
+    GetProductListBO model = new();
+    GetFavLists listModel = new();
+
+    int totalRecords = 0;
+    int totalPages = 0;
+    string pagingSummaryFormat = "Displaying page {0} of {1} (total {2} records)";
+    List<int> PageSizeSelection = new List<int>() { 12, 24, 36, 48, 60 };
+    bool detailView = false;
+
+    [Parameter]
+    public bool IsListPage { get; set; } = false;
+
+    [Parameter]
+    public long ListId { get; set; } = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _search.SetSearchModel += RefreshSearchResults;
+        _search.SearchTextChanged += FilterResults;
+        //_search.SetSubscriptionFlag(true);
+
+        await base.OnInitializedAsync();
+        await Task.Delay(50);
+        model.PageNumber = 0;
+        model.PageSize = 24;
+        model.FavListId = ListId;
+
+        loading.Start();
+        await GetFavoriteLists();
+        if (model.FavListId > 0)
+            await GetFavoriteListItems();
+        loading.Stop();
+    }
+
+
+    async Task GetFavoriteLists()
+    {
+        listModel.CompanyId = _state.CompanyId;
+        listModel.CustomerId = _state.CustomerId;
+        listModel.UserId = _state.UserId;
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<FavoriteListBO>>>($"api/Product/GetFavoriteLists{Extensions.ConvertToQueryString(listModel)}", cts);
+
+        if (response.IsSuccess)
+        {
+            favLists = response.Data;
+            model.FavListId = ListId > 0 ? ListId : (favLists.Count() > 0 ? favLists.First().Id : 0); // if there is a list id coming from the FavlistPage
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetFavoriteListItems()
+    {
+        loading.Start();
+        model.UserId = _state.UserId;
+        model.CustomerId = _state.CustomerId;
+        model.CompanyId = _state.CompanyId;
+        model.IsFavList = true;
+        model.PageNumber = 0;
+        try
+        {
+            var response = await _http.PostRequest<GenericPagedResponse<IEnumerable<ProductListBO>>>($"api/Product/GetFavoriteListItems", model, cts);
+
+            if (response.IsSuccess)
+            {
+                _search.SetSubscriptionFlag(false);
+                products = response.Data;
+                totalPages = response.TotalPages;
+                totalRecords = response.TotalRecords;
+                if (products.Count() > 0)
+                {
+                    _search.SetSubscriptionFlag(true);
+                }
+            }
+            else
+            {
+                products = null;
+                totalPages = 0;
+                totalRecords = 0;
+            }
+        }
+        finally
+        {
+            loading.Stop();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async void RefreshSearchResults(GetProductListBO searchModel)
+    {
+        model = searchModel;
+        //model.SearchString = "";
+        model.PageNumber = 0;
+        model.PageSize = 24;
+
+        await GetFavoriteListItems();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void FilterResults(string searchText)
+    {
+        model.SearchString = searchText;
+        await GetFavoriteListItems();
+    }
+
+    async Task PageChanged(PagerEventArgs args)
+    {
+        model.PageNumber = args.PageIndex;
+        model.PageSize = args.Top;
+
+        await GetFavoriteListItems();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void DeleteItemFromList(ProductListBO prod)
+    {
+        var res = await _favListService.DeleteItem(prod.ProductId, model.FavListId);
+        if (res)
+        {
+            products = products.Where(x => x.ProductId != prod.ProductId);
+            StateHasChanged();
+        }
+    }
+
+    bool IsDefaultList()
+    {
+        if (model.FavListId > 0)
+        {
+            var listType = favLists.FirstOrDefault(x => x.Id == model.FavListId).TypeId;
+
+            if (listType == (byte)FavListTypes.Default)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+        _search.SetSearchModel -= RefreshSearchResults;
+        _search.SearchTextChanged -= FilterResults;
+        _search.SetSubscriptionFlag(false);
+    }
+
+}

@@ -1,0 +1,43 @@
+﻿@using AdminPanel.Shared.BO.MasterAdmin
+@if (!IsText)
+{
+    <div>
+        <RadzenCheckBox @bind-Value="@Value" Name="IsCSVGeneration" TValue="bool">
+        </RadzenCheckBox>
+        <RadzenLabel Text="Is CSV Generation" Component="IsCSVGeneration" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsCSVGeneration"))" />
+    </div>
+}
+else
+{
+    <div class="row mb-3">
+        <RadzenLabel Text="Public Key" Component="IsCSVGeneration" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"IsCSVGeneration"))" />
+        <div>
+            <RadzenTextBox @bind-Value="@ValueText" Name="StripePublicKey" class="form-control" MaxLength="200" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? ValueText { get; set; }
+
+    [Parameter]
+    public bool Value { get; set; }
+
+    [Parameter]
+    public bool IsText { get; set; } = false;
+
+    [Parameter]
+    public string? Name { get; set; }
+
+    [Parameter]
+    public string? DisplayName { get; set; }
+
+    [Parameter]
+    public EventCallback<(ElementReference elementReference, string key)> OnHover { get; set; }
+
+    async Task ShowTooltip(ElementReference elementReference, string key)
+    {
+        await OnHover.InvokeAsync((elementReference, key));
+    }
+}

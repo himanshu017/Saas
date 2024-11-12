@@ -1,0 +1,27 @@
+﻿@inject NavigationManager _navigationManager
+
+@*<h2>You are not authorized to view this page. Redirecting to Login....</h2>*@
+<div style="position:absolute; top:30vh; width:100%; text-align:center">
+    <img src="Images/ez-logo-dark.svg" alt="logo" height="200">
+</div>
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> StateAuthenticate { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await StateAuthenticate;
+        if (authenticationState?.User?.Identity is null || !authenticationState.User.Identity.IsAuthenticated)
+        {
+            var returnUri = _navigationManager.ToBaseRelativePath(_navigationManager.Uri);
+             if (string.IsNullOrWhiteSpace(returnUri))
+             {
+                 _navigationManager.NavigateTo("/Login", true);
+             }
+             else
+             {
+                 _navigationManager.NavigateTo($"/Login?returnUrl={returnUri}", true);
+             }
+        }
+    }
+}

@@ -1,0 +1,76 @@
+﻿@implements IDisposable
+
+@if(products == null || products.Count() == 0)
+{
+    return;
+}
+<!--=====================================
+            RECENT PART START
+=======================================-->
+<section class="section recent-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="section-heading">
+                    <h2>recently sold items</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+             @if (products != null && products.Count() > 0)
+            {
+                foreach (var prod in products)
+                {
+                    <ProductDisplay Prod="prod" />
+                }
+            }
+        </div>
+       @*  <div class="row">
+            <div class="col-lg-12">
+                <div class="section-btn-25">
+                    <a href="shop-4column.html" class="btn btn-outline">
+                        <i class="fas fa-eye"></i>
+                        <span>show more</span>
+                    </a>
+                </div>
+            </div>
+        </div> *@
+    </div>
+</section>
+<!--=====================================
+            RECENT PART END
+=======================================-->
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<ProductListBO> products;
+    GetProductModel model = new GetProductModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await GetRecentlyOrderedProducts();
+    }
+
+    async Task GetRecentlyOrderedProducts()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 10;
+        model.PageNumber = 0;
+        var response = await _http.PostRequest<GenericResponse<IEnumerable<ProductListBO>>>($"api/Home/GetRecentlyOrderedProducts", model,cts);
+
+        if (response.IsSuccess)
+        {
+            products = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

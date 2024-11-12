@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RazorPay.Core" Version="1.0.2" />
+    <PackageReference Include="Stripe.net" Version="42.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Paypal\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AdminPanel\Shared\AdminPanel.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,161 @@
+﻿@inject QuickViewService _qview
+@implements IDisposable
+@inject IJSRuntime jsRuntime
+
+<!--=====================================
+PRODUCT VIEW START
+=======================================-->
+<div class="modal @(display == "block" ? "show" : "") fade" id="product-view" style="display:@display">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <button class="modal-close icofont-close" data-bs-dismiss="modal" onclick="@Hide"></button>
+            <div class="product-view">
+                @if (Prod.ProductId > 0)
+                {
+                    <div class="row">
+                        <div class="col-md-6 col-lg-6">
+                            <div class="view-gallery">
+                                <div class="view-label-group">
+                                    @if ((Prod.IsRewardItem ?? false) && _state.ManagedFeatures.IsHighlightRewardItems)
+                                    {
+                                        <label class="label-text sale pulsate">Rewards</label>
+                                    }
+                                    @if (Prod.IsNew)
+                                    {
+                                        <label class="view-label new">new</label>
+                                    }
+                                </div>
+                                <ul class="preview-slider slider-arrow">
+                                    <li>
+                                        @if (Prod.ProductImages.Count() > 0)
+                                        {
+                                            <img src="@_state.ImagePath/ProductsImages/@_state.DomainName/@Prod.ProductImages[0].ImageName"
+                                                 onerror="this.onerror=null;this.src='@_state.ImagePath/ProductsImages/no-image.png';"
+                                                 alt="@Prod.Name">
+                                        }
+                                        else
+                                        {
+                                            <img src="@_state.ImagePath/ProductsImages/no-image.png" alt="@Prod.Name">
+                                        }
+                                    </li>
+                                    @* <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                                <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                                <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                                <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                                <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                                <li><img src="theme/images/product/01.jpg" alt="product"></li>*@
+                                </ul>
+                                @* <ul class="thumb-slider">
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            <li><img src="theme/images/product/01.jpg" alt="product"></li>
+                            </ul>*@
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-6">
+                            <div class="view-details">
+                                <h3 class="view-name">
+                                    <a href="javascript:;">@Prod.Name</a>
+                                </h3>
+                                <div class="view-meta">
+                                    <p>SKU:<span>@Prod.Code</span></p>
+                                    <p>BRAND:<a href="javascript:;">@Prod.BrandName</a></p>
+                                </div>
+                                <div class="view-rating">
+                                    <i class="active icofont-star"></i>
+                                    <i class="active icofont-star"></i>
+                                    <i class="active icofont-star"></i>
+                                    <i class="active icofont-star"></i>
+                                    <i class="icofont-star"></i>
+                                    <a href="javascript:;">(3 reviews)</a>
+                                </div>
+                                <h3 class="view-price">
+                                    <del>$10</del>
+                                    <span>@(Prod.Price.ToPrice(_state.CurrencyInfo))<small>/@Prod.UnitName</small></span>
+                                </h3>
+                                <p class="view-desc">@((MarkupString)Prod.FullDescription)</p>
+
+                                @if (Prod.ProductTags.Count > 0)
+                                {
+                                    <div class="view-list-group">
+                                        <label class="view-list-title">tags:</label>
+                                        <ul class="view-tag-list">
+                                            @foreach (var tag in Prod.ProductTags)
+                                            {
+                                                <li><a href="javascript:;">@tag</a></li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+
+                                <div class="view-list-group">
+                                    <label class="view-list-title">Share:</label>
+                                    <ul class="view-share-list">
+                                        <li><a href="javascript:;" class="icofont-facebook" title="Facebook"></a></li>
+                                        <li><a href="javascript:;" class="icofont-twitter" title="Twitter"></a></li>
+                                        <li><a href="javascript:;" class="icofont-linkedin" title="Linkedin"></a></li>
+                                        <li><a href="javascript:;" class="icofont-instagram" title="Instagram"></a></li>
+                                    </ul>
+                                </div>
+                                <div class="view-add-group">
+                                    <AddProductToCart Product="Prod" />
+                                </div>
+                                <div class="view-action-group">
+                                    <a class="view-wish wish" href="Javascript:;" @onclick="@(() => _favListService.AddToList(Prod.ProductId))" title="Add to Your Favorite List">
+                                        <i class="icofont-list"></i>
+                                        <span>add to list</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (display == "block")
+{
+    <div class="modal-backdrop fade show"></div>
+}
+<!--=====================================
+            PRODUCT VIEW END
+=======================================-->
+@code {
+    string display = "none";
+    ProductListBO Prod = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _qview.OnShow += Show;
+        _qview.OnHide += Hide;
+    }
+
+    public async void Show(ProductListBO prod)
+    {
+        display = "block";
+        Prod = prod;
+        await jsRuntime.InvokeVoidAsync("setBodyModalClass");
+        StateHasChanged();
+    }
+
+    public async void Hide()
+    {
+        display = "none";
+        Prod = new();
+        await jsRuntime.InvokeVoidAsync("setBodyModalClass");
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _qview.OnShow -= Show;
+        _qview.OnHide -= Hide;
+    }
+}

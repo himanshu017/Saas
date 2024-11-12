@@ -1,0 +1,186 @@
+﻿<style>
+    .product-media {
+        height: 200px !important;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: center;
+    }
+</style>
+
+@if (Prod == null)
+{
+    return;
+}
+
+@if (!IsDetailView)
+{
+    <div class="col">
+        <div class="@className-card">
+            <div class="@className-media">
+                <div class="@className-label">
+                    @if ((Prod.IsRewardItem ?? false) && _state.ManagedFeatures.IsHighlightRewardItems)
+                    {
+                        <label class="label-text sale pulsate">Rewards</label>
+                    }
+                    @if (Prod.IsNew)
+                    {
+                        <label class="label-text new">new</label>
+                    }
+                </div>
+                <button class="@className-wish wish">
+                    <i class="fas fa-heart"></i>
+                </button>
+                <a class="@className-image" href="/Product/@Prod.ProductId">
+                    @if (Prod.ProductImages.Count() > 0)
+                    {
+                        <img src="@_state.ImagePath/ProductsImages/@_state.DomainName/@Prod.ProductImages[0].ImageName"
+                             onerror="this.onerror=null;this.src='@_state.ImagePath/ProductsImages/no-image.png';"
+                             alt="@Prod.Name">
+                    }
+                    else
+                    {
+                        <img src="@_state.ImagePath/ProductsImages/no-image.png" alt="@Prod.Name">
+                    }
+                </a>
+                <div class="@className-widget">
+                    @if (_state.IsAuthenticated)
+                    {
+                        <a title="Product Enquiry" href="javascript:;" class="fas fa-question-circle"></a>
+                        @if (IsFavList)
+                        {
+                            if (!IsDefaultList)
+                            {
+                                <a title="Delete Item" href="javascript:;" class="venobox fas fa-trash" @onclick=@(() => OnDeleteItemFromList.InvokeAsync(Prod))></a>
+                            }
+                        }
+                        else
+                        {
+                            <a title="Add to List" href="javascript:;" class="venobox fas fa-plus-square" @onclick="@(() => _favListService.AddToList(Prod.ProductId))"></a>
+                        }
+                    }
+                    <a title="Quick View" href="javascript:;" class="fas fa-eye" @onclick=@(() => quickView.Show(Prod))></a>
+                </div>
+            </div>
+            <div class="@className-content">
+                <div class="@className-rating">
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="icofont-star"></i>
+                    <a href="javascript:;">(3)</a>
+                </div>
+                <h6 class="@className-name">
+                    <a href="jaascript:;" title="@Prod.Name">@(IsFeature ? Prod.Name : Prod.Name.Truncate(21))</a>
+                </h6>
+                <h6 class="@className-price">
+                    <del>$25.22</del>
+                    <span>@(Prod.Price.ToPrice(_state.CurrencyInfo))<small>/@Prod.UnitCode</small></span>
+                </h6>
+                @if (IsFeature)
+                {
+                    <p class="feature-desc">Lorem ipsum dolor sit consectetur adipisicing xpedita dicta amet olor ut eveniet commodi...</p>
+                }
+                <AddProductToCart Product="Prod" />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="col-12">
+        <div class="product-standard">
+            <div class="standard-label-group">
+                @if ((Prod.IsRewardItem ?? false) && _state.ManagedFeatures.IsHighlightRewardItems)
+                {
+                    <label class="label-text sale pulsate">Rewards</label>
+                }
+                @if (Prod.IsNew)
+                {
+                    <label class="standard-label new">new</label>
+                }
+            </div>
+            <div class="standard-media">
+                <a class="standard-image" href="/Product/@Prod.ProductId">
+                    @if (Prod.ProductImages.Count() > 0)
+                    {
+                        <img src="@_state.ImagePath/ProductsImages/@_state.DomainName/@Prod.ProductImages[0].ImageName" alt="@Prod.Name">
+                    }
+                    else
+                    {
+                        <img src="@_state.ImagePath/ProductsImages/no-image.png" alt="@Prod.Name">
+                    }
+                </a>
+                <div class="standard-widget">
+                    <a title="Product Enquiry" href="javascript:;" class="fas fa-question-circle"></a>
+                    @if (IsFavList)
+                    {
+                        if (!IsDefaultList)
+                        {
+                            <a title="Delete Item" href="javascript:;" class="venobox fas fa-trash" @onclick=@(() => OnDeleteItemFromList.InvokeAsync(Prod))></a>
+                        }
+                    }
+                    else
+                    {
+                        <a title="Add to List" href="javascript:;" class="venobox fas fa-plus-square" @onclick="@(() => _favListService.AddToList(Prod.ProductId))"></a>
+                    }
+                    <a title="Product View" href="javascript:;" class="fas fa-eye" @onclick=@(() => quickView.Show(Prod))></a>
+                </div>
+            </div>
+            <div class="standard-content">
+                <h4 class="standard-name">
+                    <a href="javascript:;">@Prod.Name</a>
+                </h4>
+                <h5 class="standard-price">
+                    @*<del>$34</del>*@
+                    <span>@(Prod.Price.ToPrice(_state.CurrencyInfo))<small>/@Prod.UnitCode</small></span>
+                </h5>
+                <div class="standard-rating">
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="active icofont-star"></i>
+                    <i class="icofont-star"></i>
+                    <a href="javascript:;">(3)</a>
+                </div>
+                <p class="standard-desc">@((MarkupString)Prod.ShortDescription)</p>
+                <div class="standard-action-group">
+                    <AddProductToCart Product="Prod" IsDetailview="true" />
+                    <button class="standard-wish wish" title="Add to Wishlist">
+                        <i class="fas fa-heart"></i>
+                        <span>add to wish</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ProductListBO Prod { get; set; }
+
+    [Parameter]
+    public bool IsDetailView { get; set; } = false;
+
+    [Parameter]
+    public bool IsFavList { get; set; } = false;
+
+    [Parameter]
+    public bool IsDefaultList { get; set; } = false;
+
+    [Parameter]
+    public bool IsFeature { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<ProductListBO> OnDeleteItemFromList { get; set; }
+
+    string className => IsFeature ? "feature" : "product";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+}

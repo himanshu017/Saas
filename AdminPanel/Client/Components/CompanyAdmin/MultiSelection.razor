@@ -1,0 +1,133 @@
+﻿@inject DialogService _dialog
+<div class="row mb-3">
+    <div class="col-md-6">
+        <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                       @bind-Value=@select TValue="long" Data=@allValues LoadData=@LoadByVirtualization
+                       Placeholder="Search all..." AllowVirtualization="true" Count="@totalCount"
+                       TextProperty="Description" ValueProperty="IdLong" Change="@OnValSelect"
+                       Style="height:300px" Class="w-100" />
+    </div>
+
+    <div class="col-md-6">
+        <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                       @bind-Value=@remove Data=@selectedValues
+                       Placeholder="Search ..."
+                       TextProperty="Description" ValueProperty="IdLong" Change="@OnValRemove"
+                       Style="height:300px" Class="w-100" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-9">
+        <RadzenButton Text="Confirm Selection" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Click="ConfirmSelection" />
+        <RadzenButton Text="Cancel" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _dialog.Close())" />
+    </div>
+</div>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+
+    [Parameter]
+    public bool IsCustomer { get; set; } = false;
+
+    [Parameter]
+    public IEnumerable<long>? PreviousSelection { get; set; }
+
+    [Parameter]
+    public long Excluded { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<long>> OnSelection { get; set; }
+
+    List<CommonDropdownBO> allValues = new();
+    List<CommonDropdownBO> selectedValues = new();
+
+    long select;
+    long remove;
+    int totalCount = 0;
+    string height = "300";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+
+        await GetMainListing();
+
+        if (PreviousSelection?.Count() > 0)
+        {
+            await GetPreiousSelection();
+        }
+    }
+
+    async Task GetPreiousSelection()
+    {
+        selectedValues = (await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/{(IsCustomer ? "GetAllCustomers" : "GetAllProducts")}?companyId={_state.CompanyId}&SelectedValues={string.Join(",", PreviousSelection)}")).ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetMainListing(string query = "")
+    {
+        allValues = (await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/{(IsCustomer ? "GetAllCustomers" : "GetAllProducts")}?companyId={_state.CompanyId}&{query}")).ToList();
+        if (allValues.Count() > 0)
+        {
+            totalCount = allValues.ToList()[0].TotalRecords;
+        }
+
+    }
+
+    async Task LoadByVirtualization(LoadDataArgs args)
+    {
+        await GetMainListing($"pageNumber={args.Skip.Value}&pageSize={args.Top.Value}&searchString={args.Filter}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void OnValSelect(object val)
+    {
+        var id = (long)val;
+
+        var selected = allValues.FirstOrDefault(x => x.IdLong == id);
+        var existing = selectedValues.FirstOrDefault(x => x.IdLong == id);
+
+        if (existing != null)
+        {
+            return;
+        }
+        else
+        {
+            selectedValues.Add(selected);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void OnValRemove(object val)
+    {
+        var id = (long)val;
+
+        var removeItem = selectedValues.FirstOrDefault(x => x.IdLong == id);
+
+        if (selectedValues.Contains(removeItem))
+        {
+            selectedValues.Remove(removeItem);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void ConfirmSelection()
+    {
+        if (selectedValues.Count > 0)
+        {
+            var selection = selectedValues.Where(x => x.IdLong != Excluded).Select(s => s.IdLong).ToList();
+            _dialog.Close(selection);
+            await OnSelection.InvokeAsync(selection);
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Warning;
+            notification.Summary = "Please select at least 1 item from the main list.";
+            _notify.Notify(notification);
+        }
+
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,191 @@
+﻿@page "/Products"
+@using System.Globalization;
+
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+@inject DialogService dialogService
+@inject NotificationService _notify
+@inject IStateService _state
+@inject IHttpService _http
+@inject NavigationManager _navManager
+
+<PageHeader Title="All Products">
+    <ChildContent>
+        <RadzenLink Path="AddProduct" Text="Add Product" class="btn btn-sm btn-outline-secondary" />
+        @*<button type="button" class="btn btn-sm btn-outline-secondary" @onclick="@(() => ManageProduct(new ProductBO()))">Add New Product</button>*@
+    </ChildContent>
+</PageHeader>
+<Loading @ref="loading" />
+
+
+<RadzenDataGrid @ref="grid" Data="@allproducts" TItem="ProductBO" ExpandMode="DataGridExpandMode.Single">
+    <Columns>
+        <RadzenDataGridColumn TItem="ProductBO" Title="Image" Width="80px" TextAlign="TextAlign.Center">
+            <Template Context="row">
+                @if (row.ProductImagesList.Count() > 0)
+                {
+                    <img src="../ProductsImages/@_state.DomainName/@row.ProductImagesList.ToList()[0].Name" class="p-img" />
+                }
+                else
+                {
+                    <img src="../ProductsImages/no-image.png" class="p-img" alt="@row.Name" />
+                }
+            </Template>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductBO" Property="Name" Title="Name">
+            <Template Context="row">
+                <span>@row.Name</span>
+            </Template>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductBO" Property="Code" Title="Code" Width="130px">
+            <Template Context="row">
+                <span>@row.Code</span>
+            </Template>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductBO" Property="Price" Title="Price" Width="90px">
+            <Template Context="row">
+                <span>
+                    @row.Price.ToPrice(_state.CurrencyInfo)
+                </span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductBO" Property="IsFeatured" Title="Featured" Width="100px" CssClass="text-center">
+            <Template Context="row">
+                <RadzenCheckBox TValue="bool" @bind-Value="row.IsFeatured" Style="margin: 0 auto;" Change="@(args => UpdateProduct(args, row, nameof(row.IsFeatured)))" />
+                <RadzenBadge BadgeStyle="@(row.IsFeatured ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@(row.IsFeatured ? "Yes" : "No")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductBO" Property="IsAvailable" Title="Available" Width="100px" CssClass="text-center">
+            <Template Context="row">
+                <RadzenCheckBox TValue="bool" @bind-Value="row.IsAvailable" Style="margin: 0 auto;" Change="@(args => UpdateProduct(args, row, nameof(row.IsAvailable)))" />
+                <RadzenBadge BadgeStyle="@(row.IsAvailable ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@(row.IsAvailable ? "Yes" : "No")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductBO" Property="IsActive" Title="Active" Width="100px" CssClass="text-center">
+            <Template Context="row">
+                <RadzenCheckBox TValue="bool" @bind-Value="row.IsActive" Style="margin: 0 auto;" Change="@(args => UpdateProduct(args, row, nameof(row.IsActive)))" />
+                <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Yes" : "No")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductBO" Width="100px">
+            <Template Context="row">
+                <RadzenButton Icon="edit" title="Edit Product" Click="@(() => EditProduct(row))" />
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Click="@(() => DeleteProduct(row))" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+
+</RadzenDataGrid>
+<RadzenPager class="px-0" PageSizeOptions="@pageSizeOptions" ShowPagingSummary="true"
+             PagingSummaryFormat="@pagingSummaryFormat" Count="totalRecords" PageSize="model.PageSize"
+             PageNumbersCount="5" PageChanged="@PageChanged" PageSizeChanged="@PageSizeChanged" />
+@code {
+    RadzenDataGrid<ProductBO>? grid;
+    Loading loading;
+    IEnumerable<ProductBO>? allproducts;
+    GetProductModel model = new();
+    int totalRecords = 0;
+    string pagingSummaryFormat = "Displaying page {0} of {1} (total {2} records)";
+    List<int> pageSizeOptions = new List<int>() { 20, 50, 100, 200 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 25;
+        model.PageNumber = 1;
+        await GetAllProducts($"PageSize={model.PageSize}");
+    }
+
+    async Task GetAllProducts(string query = "")
+    {
+        loading.ShowLoading();
+        allproducts = await _http.GetAllRecords<IEnumerable<ProductBO>>($"Product/GetAllProducts?CompanyId={model.CompanyId}&{query}");
+        if (allproducts.Count() > 0)
+        {
+            totalRecords = allproducts.ToList()[0]?.TotalRecords ?? 0;
+        }
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+    async Task DeleteProduct(ProductBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.Name}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            List<FileViewModel> list = new List<FileViewModel>();
+            row.ProductImagesList = list;
+            row.DomainName = _state.DomainName;
+            var response = await _http.PostRequest<BaseResponseBO>("Product/DeleteProduct", row);
+
+            if (response.IsSuccess)
+            {
+                _notifyS.SuccessMsg("", response.Message);
+                await GetAllProducts();
+                await grid.Reload();
+            }
+            else
+            {
+                _notifyS.WarningMsg("", response.Message);
+            }
+        }
+    }
+
+    async Task EditProduct(ProductBO row)
+    {
+        var queryParams = new Dictionary<string, string>
+            {
+                ["x"] = row.ProductId.ToString()
+            };
+        _navManager.NavigateTo(QueryHelpers.AddQueryString("AddProduct", queryParams));
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task UpdateProduct(bool? value, ProductBO row, string colName)
+    {
+        var updateBitModel = new UpdateBitBO()
+            {
+                Id = row.ProductId,
+                ModifiedBy = _state.UserId,
+                ColName = colName,
+                Value = (value ?? false)
+            };
+
+        var res = await _http.PostRequest<bool>("Product/UpdateBitField", updateBitModel);
+        if (res)
+        {
+            _notifyS.SuccessMsg("", "Product updated successfully");
+        }
+        else
+        {
+            _notifyS.WarningMsg("", "Error updating product. Contact admin for more details.");
+        }
+    }
+
+    async Task PageChanged(PagerEventArgs args)
+    {
+        model.PageSize = args.Top;
+        model.PageNumber = args.PageIndex;
+
+        await GetAllProducts($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int size)
+    {
+        model.PageSize = size;
+        model.PageNumber = 1;
+        await GetAllProducts($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+    }
+}

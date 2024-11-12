@@ -1,0 +1,24 @@
+﻿@if (Model.Visible)
+{
+    <div class="alert alert-@Model.Type alert-dismissible mb-4 p-2" role="alert">
+        <h4 class="alert-heading">
+            @(string.IsNullOrEmpty(Title) ? "" : Title)
+            <button type="button" class="btn-close p-2" data-bs-dismiss="alert" aria-label="Close" @onclick="@(() => Model.Visible = false)"></button>
+        </h4>
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <hr>
+        }
+        <p class="mb-0">
+            @((MarkupString)Model.Message)
+        </p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public AlertBO Model { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; } = "";
+}

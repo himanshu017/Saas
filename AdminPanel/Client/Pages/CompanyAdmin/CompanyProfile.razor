@@ -1,0 +1,337 @@
+﻿@page "/AccountSettings"
+@using System.Globalization
+@using AdminPanel.Client.Pages.SuperAdmin.ManageCompany
+@inject IStateService _state
+@inject IHttpService _http
+
+<PageHeader Title="Account Settings" />
+<Loading @ref="loading" />
+<style>
+    .rz-fileupload-content {
+        display: none !important;
+    }
+</style>
+<div class="container-fluid">
+    <div class="col">
+        <div class="row">
+            <div class="col mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="e-profile">
+                            <div class="row">
+                                <div class="col-12 col-sm-auto mb-3">
+                                    <div class="mx-auto" style="width: 140px;">
+                                        <div class="d-flex justify-content-center align-items-center rounded" style="height: 140px; background-color: rgb(233, 236, 239);">
+                                            @if (company != null && !string.IsNullOrEmpty(imageData))
+                                            {
+                                                <img src=@imageData width="100%" />
+                                            }
+                                            else
+                                            {
+                                                <span style="color: rgb(166, 168, 170); font: bold 8pt Arial;">140x140</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col d-flex flex-column flex-sm-row justify-content-between mb-3">
+                                    <div class="text-center text-sm-left mb-2 mb-sm-0">
+                                        <h4 class="pt-sm-2 pb-1 mb-0 text-nowrap text-start">Company Logo</h4>
+                                        <p class="mb-0">&nbsp;</p>
+
+                                        <div class="mt-2 text-start">
+                                            <InputFile OnChange="OnChange" accept="image/png, image/gif, image/jpeg" class="form-control visually-hidden" id="companyLogo" />
+                                            <label class="btn btn-info" for="companyLogo">Choose File</label>
+                                            <RadzenButton Text="Upload" Visible="@(model.File != null && model.File.Content?.Length > 0)"
+                                                          ButtonType="ButtonType.Button"
+                                                          ButtonStyle="ButtonStyle.Primary" Click="UploadLogo" />
+                                            <RadzenButton Icon="cancel" ButtonStyle="ButtonStyle.Danger" Click="OnCancel" Visible="@(model.File != null)" />
+                                        </div>
+                                        <div class="text-muted text-start">
+                                            <small>
+                                                Logo size should be less than 2mb and dimentions should be less than 300 * 120 (W * H).<br />
+                                                Any size greater than this will be automatically resized
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="text-center text-sm-right">
+                                        <div class="text-muted"><small>Registered On</small></div>
+                                        <div class="text-muted fw-bold text-end"><small>@(company.CreatedOn.HasValue ? company.CreatedOn.Value.ToString("dd MMM yyyy") : "")</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
+                                <Tabs>
+                                    <RadzenTabsItem Text="General Info">
+                                        <RadzenTemplateForm class="form" TItem="CompanyBO" Data="company" Submit="UpdateCompanyDetails">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Company Name</label>
+                                                                <RadzenTextBox @bind-Value="@company.CompanyName" class="form-control my-2" ReadOnly="true" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Domain Name</label>
+                                                                <RadzenTextBox @bind-Value="@company.DomainName" class="form-control my-2" ReadOnly="true" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>First Name</label>
+                                                                <RadzenTextBox @bind-Value="@company.FirstName" class="form-control my-2" Name="FName" />
+                                                                <RadzenRequiredValidator Component="FName" Text="First Name is required" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Last Name</label>
+                                                                <RadzenTextBox @bind-Value="@company.LastName" class="form-control my-2" Name="LName" />
+                                                                <RadzenRequiredValidator Component="FName" Text="Last Name is required" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Email</label>
+                                                                <RadzenTextBox @bind-Value="@company.Email" class="form-control my-2" ReadOnly="true" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Phone 1</label>
+                                                                <RadzenTextBox @bind-Value="@company.Phone" class="form-control my-2" Name="Phone" />
+                                                                <RadzenRequiredValidator Component="Phone" Text="Phone 1 is required" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Phone 2</label>
+                                                                <RadzenTextBox @bind-Value="@company.Phone2" class="form-control my-2" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Fax</label>
+                                                                <RadzenTextBox @bind-Value="@company.Fax" class="form-control my-2" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Timezone Selection</label>
+                                                                <RadzenDropDown @bind-Value="@company.TimeZoneId" Data="@timeZones"
+                                                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true"
+                                                                                ValueProperty="Id" TextProperty="Description"
+                                                                                Placeholder="Choose Time Zone" AllowClear="true" class="w-100 my-2" Name="TZone" />
+                                                                <RadzenRequiredValidator Component="TZone" Text="Time Zone is required" DefaultValue="0" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Primary Color</label>
+                                                                <RadzenColorPicker @bind-Value=@company.PrimaryColor class="form-control my-2"
+                                                                                   ShowHSV=true ShowRGBA=true
+                                                                                   ShowColors=true ShowButton=false Change="@((args) => OnColorChange(args,"P"))" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>Secondary Color</label>
+                                                                <RadzenColorPicker @bind-Value=@company.SecondaryColor class="form-control my-2"
+                                                                                   ShowHSV=true ShowRGBA=true
+                                                                                   ShowColors=true ShowButton=false Change="@((args) => OnColorChange(args,"S"))" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="col">
+                                                            <div class="form-group">
+                                                                <label>&nbsp;</label>
+                                                                @if (!string.IsNullOrEmpty(company.PrimaryColor))
+                                                                {
+                                                                    <div style="background:@company.PrimaryColor;" class="w-100 rounded-3 d-table p-2 my-2">
+                                                                        <span style="color:@company.SecondaryColor;" class="text-center fw-bold d-table-cell align-middle">Text Sample for Color Scheme</span>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-4">
+                                                <div class="col d-flex justify-content-end">
+                                                    <RadzenButton Text="Save Changes" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" />
+                                                </div>
+                                            </div>
+                                        </RadzenTemplateForm>
+                                    </RadzenTabsItem>
+                                    <RadzenTabsItem Text="Global Settings">
+                                        <Configuration CompanyId="_state.CompanyId" ShowCompanySelection="false" />
+                                    </RadzenTabsItem>
+                                    <RadzenTabsItem Text="Change Password">
+                                        <AlertMessage AlertModel="@alert" />
+                                        <ResetUserPassword UserId="_state.UserId" CheckExisting="true" OnSubmit="ShowResponse"/>
+                                    </RadzenTabsItem>
+                                </Tabs>
+                            </RadzenTabs>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    Loading loading;
+    UpdateCompanyLogoModel model = new();
+    CompanyBO company = new();
+    string imageData = "";
+    IEnumerable<CommonDropdownBO> timeZones;
+    AlertBO alert = new AlertBO();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(50);
+        loading.ShowLoading();
+
+        await GetTimeZones();
+        await GetCompanyDetails();
+
+        loading.StopLoading();
+    }
+
+    async Task GetTimeZones()
+    {
+        timeZones = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/GetTimeZones");
+    }
+
+    async Task GetCompanyDetails()
+    {
+        company = await _http.GetAllRecords<CompanyBO>($"/Settings/GetCompanyDetails?companyId={_state.CompanyId}");
+        if (!string.IsNullOrEmpty(company.Logo))
+        {
+            imageData = $"CompanyLogo/{_state.DomainName}/{company.Logo}";
+        }
+        await Task.Delay(100);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnChange(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+
+        var format = file.ContentType;// "image/png";
+        Console.WriteLine($"File: {file.Name} / {file.Size} bytes");
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(1024000).ReadAsync(buffer);
+        var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+
+        var filename = $"{Guid.NewGuid().ToString("N").ToUpper()}{Path.GetExtension(file.Name)}";
+
+        model.File = new FileViewModel
+            {
+                Content = buffer,
+                ImageDataUrl = imageDataUrl,
+                ContentType = file.ContentType,
+                Name = filename,
+                Size = file.Size,
+            };
+
+        imageData = imageDataUrl;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task UploadLogo()
+    {
+        model.UserId = _state.UserId;
+        model.CompanyId = _state.CompanyId;
+
+        var response = await _http.PostRequest<BaseResponseBO>("/Settings/AddUpdateCompanyLogo", model);
+
+        if (response.IsSuccess)
+        {
+            model = new();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void OnCancel()
+    {
+        model = new();
+        if (!string.IsNullOrEmpty(company.Logo))
+        {
+            imageData = $"CompanyLogo/{_state.DomainName}/{company.Logo}";
+        }
+        else
+        {
+            imageData = "";
+        }
+
+        StateHasChanged();
+    }
+
+    void OnColorChange(string value, string type)
+    {
+        int left = value.IndexOf('(');
+        int right = value.IndexOf(')');
+
+        string noBrackets = value.Substring(left + 1, right - left - 1);
+
+        string[] parts = noBrackets.Split(',');
+
+        int r = int.Parse(parts[0], CultureInfo.InvariantCulture);
+        int g = int.Parse(parts[1], CultureInfo.InvariantCulture);
+        int b = int.Parse(parts[2], CultureInfo.InvariantCulture);
+
+        string color = "#" + r.ToString("X2") + g.ToString("X2") + b.ToString("X2");
+
+        if (type == "P")
+        {
+            company.PrimaryColor = color;
+        }
+        else
+        {
+            company.SecondaryColor = color;
+        }
+
+        Console.WriteLine(color);
+    }
+
+    async Task UpdateCompanyDetails()
+    {
+        loading.ShowLoading();
+        company.UserId = _state.UserId;
+
+        var response = await _http.PostRequest<BaseResponseBO>("/Settings/UpdateCompanyDetails", company);
+
+        if (response.IsSuccess)
+        {
+            await GetCompanyDetails();
+        }
+
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+    public void ShowResponse(BaseResponseBO res)
+    {
+        alert.Visible = true;
+        alert.Message = res.Message;
+        alert.Type = res.IsSuccess ? "success" : "warning";
+
+        StateHasChanged();
+    }
+}

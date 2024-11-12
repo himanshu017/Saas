@@ -1,0 +1,126 @@
+﻿@implements IDisposable
+@inject DialogService _dialog
+
+@if (isList)
+{
+    <div class="row">
+        <RadzenRadioButtonList @bind-Value=@SelectedCommentId TValue="long" Orientation="Orientation.Vertical" Data="@comments"
+                           TextProperty="CommentDescription" ValueProperty="Id" />
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-12 d-flex align-items-end justify-content-end">
+            <div class="col-6">
+                <RadzenButton Text="Remove" ButtonStyle="ButtonStyle.Warning" Click="@RemoveComment" Visible=@hasComment />
+                <RadzenButton Text="Add" Icon="add" ButtonStyle="ButtonStyle.Primary" Click="@ToggleList" />
+            </div>
+            <div class="col-6 text-end">
+                <RadzenButton Text="Select" Disabled="@(SelectedCommentId == 0)" Click="SelectComment" ButtonStyle="ButtonStyle.Primary" />
+                <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _dialog.Close())" />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row form-group">
+        <label>Comment:</label>
+        <div class="col-12">
+            <RadzenTextArea Rows="2" @bind-Value="@comment.CommentDescription" MaxLength="200" class="w-100" />
+        </div>
+
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-12 d-flex align-items-end justify-content-end">
+            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" class="me-2" Click="AddComment" />
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="@ToggleList" />
+        </div>
+    </div>
+}
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+
+    [Parameter]
+    public CommentTypes Type { get; set; }
+
+    [Parameter]
+    public long SelectedCommentId { get; set; } = 0;
+
+    bool hasComment = false;
+
+    IEnumerable<CommentsBO> comments;
+    CommentsBO comment = new();
+    GetCommentsBO model = new();
+    bool isList = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetCommentsByType();
+        hasComment = SelectedCommentId > 0;
+    }
+
+    async Task GetCommentsByType()
+    {
+        model.CustomerId = _state.CustomerId;
+        model.UserId = _state.UserId;
+        model.TypeId = (byte)Type;
+
+        var res = await _http.GetAllRecords<GenericResponse<IEnumerable<CommentsBO>>>($"api/Order/GetCommentsByType{Extensions.ConvertToQueryString(model)}", cts);
+        if (res.IsSuccess)
+        {
+            comments = res.Data;
+            StateHasChanged();
+        }
+        else
+        {
+            _notify.ErrorMsg(res.Message);
+        }
+    }
+
+    void ToggleList(){
+        isList = !isList;
+        comment = new();
+        StateHasChanged();
+    }
+
+    void SelectComment()
+    {
+        _dialog.Close(comments.Where(x => x.Id == SelectedCommentId).FirstOrDefault());
+    }
+
+    void RemoveComment()
+    {
+        _dialog.Close(new CommentsBO() { Id = -1 });
+    }
+
+    async Task AddComment()
+    {
+        if (!string.IsNullOrEmpty(comment.CommentDescription))
+        {
+            comment.CustomerId = _state.CustomerId;
+            comment.UserId = _state.UserId;
+            comment.TypeId = (byte)Type;
+
+            var response = await _http.PostRequest<GenericResponse<CommentsBO>>($"api/Order/AddCommentByType", comment, cts);
+            if (response.IsSuccess)
+            {
+                await GetCommentsByType();
+                comment = new();
+                isList = true;
+                await InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                _notify.ErrorMsg(response.Message, "Failed");
+            }
+        }
+
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

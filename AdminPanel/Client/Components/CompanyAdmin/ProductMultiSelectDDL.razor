@@ -1,0 +1,66 @@
+﻿<RadzenDropDown Value="@Value" TValue="IEnumerable<long>" Multiple="true" AllowClear="true" AllowFiltering="true"
+                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                AllowVirtualization="true" Count="@totalProdCount" LoadData="@LoadProductsVirtualization" 
+                Change="@OnValChange" PageSize="200" 
+                Data="@allProducts" TextProperty="Description" ValueProperty="IdLong" class="form-control" />
+
+@code {
+
+    [Parameter]
+    public IEnumerable<long>? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<long>?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<long>?> OnChange { get; set; }
+
+    IEnumerable<CommonDropdownBO> allProducts;
+    IEnumerable<long> selectedProducts;
+    int totalProdCount = 0;
+    string selectedPlaceholder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        selectedProducts = Value;
+
+        if (selectedProducts.Count() > 0)
+        {
+            selectedPlaceholder = $"{selectedProducts.Count()} Items selected";
+        }
+    }
+
+    async Task GetAllProducts(string query = "")
+    {
+        allProducts = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/GetAllProducts?companyId={_state.CompanyId}&{query}");
+        if (allProducts.Count() > 0)
+        {
+            totalProdCount = allProducts.ToList()[0].TotalRecords;
+        }
+    }
+
+    async Task LoadProductsVirtualization(LoadDataArgs args)
+    {
+        await GetAllProducts($"pageNumber={args.Skip.Value}&pageSize={args.Top.Value}&searchString={args.Filter}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void OnValChange(object val)
+    {
+        if (val == null)
+        {
+            selectedPlaceholder = "";
+        }
+        else
+        {
+            Value = ((IEnumerable<long>)val).ToList().Distinct();
+            selectedPlaceholder = $"{Value.Count()} items selected";
+        }
+
+        Console.WriteLine(JsonConvert.SerializeObject(val));
+        await OnChange.InvokeAsync(Value);
+        await ValueChanged.InvokeAsync(Value);
+        await InvokeAsync(StateHasChanged);
+    }
+}

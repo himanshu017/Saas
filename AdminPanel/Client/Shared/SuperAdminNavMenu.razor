@@ -1,0 +1,60 @@
+﻿@layout SuperAdminLayout
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a href="/Dashboard"> <img src="/Images/ez-logo.svg" alt="logo" height="45" width="100%"></a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="AdminDashboard">
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Package" Icon="inventory_2">
+                <RadzenPanelMenuItem Text="View Packages" Path="Admin/Packages" Icon="list"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Package Features" Path="Admin/PackageFeatures" Icon="support_agent"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Company" Icon="business">
+                <RadzenPanelMenuItem Text="View Companies" Path="Admin/ViewCompanies" Icon="list"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Configuration" Path="/Admin/CompanyConfig" Icon="settings"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Help Texts" Path="Admin/PackageDescription" Icon="support_agent"></RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Master Tables" Icon="important_devices">
+                <RadzenPanelMenuItem Text="Address Type" Path="/Admin/AddressTypes" Icon="contact_mail"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Comment Type" Path="/Admin/CommentTypes" Icon="3p"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Discount Type" Path="/Admin/DiscountTypes" Icon="local_offer"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Discount Limitation Type" Path="/Admin/LimitationTypes" Icon="production_quantity_limits"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Status Type" Path="/Admin/StatusTypes" Icon="format_list_numbered"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Reports" Icon="summarize">
+                <RadzenPanelMenuItem Text="Company Overview" Path="" Icon="local_shipping"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Company Usage" Path="" Icon="local_offer"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Package Subscriptions" Path="" Icon="local_offer"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Finance" Path="" Icon="tune"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Sales" Path="" Icon="cloud_upload"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+        </RadzenPanelMenu>
+    </nav>
+</div>
+
+
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

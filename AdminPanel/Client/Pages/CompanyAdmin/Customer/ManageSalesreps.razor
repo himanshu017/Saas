@@ -1,0 +1,190 @@
+﻿@page "/Salesreps"
+@inject DialogService _dialog
+@inject NotificationService _notify
+@inject IStateService _state
+@inject IHttpService _http
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+
+<PageHeader Title="Sales reps">
+
+</PageHeader>
+
+<RadzenButton Icon="add_circle_outline" Text="Add" class="mb-2" Click="@(() => grid.InsertRow(new SalesrepBO()))" />
+<RadzenDataGrid TItem="SalesrepBO" @ref="grid" Data="@AllSalesreps" RowUpdate="@AddEdit" RowCreate="@AddEdit"
+                EditMode="DataGridEditMode.Single" Responsive="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="SalesrepBO" Property="FirstName" Title="First Name" Width="120px">
+            <Template Context="row">
+                <span>@row.FirstName</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.FirstName" class="form-control" MaxLength="100" Name="FirstName" />
+                <RadzenRequiredValidator Component="FirstName" Text="First Name is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="SalesrepBO" Property="LastName" Title="Last Name" Width="120px">
+            <Template Context="row">
+                <span>@row.LastName</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.LastName" class="form-control" MaxLength="100" Name="LastName" />
+                <RadzenRequiredValidator Component="LastName" Text="Last Name is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="SalesrepBO" Title="Code" Width="350px">
+            <Template Context="row">
+                <span>@(row.SalesrepCode != null ? string.Join(",", row.SalesrepCode) : "")</span>
+            </Template>
+            <EditTemplate Context="row">
+                <InputTags Existing="row.SalesrepCode" OnInputChange="@((val) => row.SalesrepCode = val )" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="SalesrepBO" Property="Phone" Title="Phone" Width="130px">
+            <Template Context="row">
+                <span>@row.Phone</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.Phone" class="form-control" MaxLength="100" Name="Phone" />
+                <RadzenRequiredValidator Component="Phone" Text="Phone is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="SalesrepBO" Property="Email" Title="Email" Width="150px">
+            <Template Context="row">
+                <span>@row.Email</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox AutoComplete="false" @bind-Value="row.Email" class="form-control" MaxLength="100" Name="Email" />
+                <RadzenRequiredValidator Component="Email" Text="Email is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="SalesrepBO" Property="Password" Title="Password" Width="120px">
+            <Template Context="row">
+                <a href="javascript:;" @onclick="@(() => OpenResetModal(row.UserId))">Reset Password</a>
+            </Template>
+            <EditTemplate Context="row">
+                @if (row.UserId == 0)
+                {
+                    <RadzenPassword AutoComplete="false" @bind-Value="row.Password" class="form-control" MaxLength="100" Name="Password" />
+                    <RadzenRequiredValidator Component="Password" Text="Password is required" Popup="true" Style="position: fixed" />
+                }
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="SalesrepBO" Title="Features" Width="90px" CssClass="text-center">
+            <Template Context="row">
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="checklist" Click="@(args => ShowRepFeatures(row))" />
+            </Template>
+        </RadzenDataGridColumn>
+
+        <GridControls TItem="SalesrepBO" Grid="grid" Width="115px" DeleteRow="DeleteSalesrep"/>
+    </Columns>
+</RadzenDataGrid>
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 4000 };
+    RadzenDataGrid<SalesrepBO> grid;
+    IEnumerable<SalesrepBO> AllSalesreps = new List<SalesrepBO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllSalesreps();
+    }
+
+    async Task AddEdit(SalesrepBO row)
+    {
+        if (row.UserId == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+
+
+        row.CompanyId = _state.CompanyId;
+        row.IsActive = true;
+        row.IsEmailVerified = true;
+        var response = await _http.PostRequest<BaseResponseBO>("/Customer/AddEditSalesrep", row);
+
+        if (response.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = response.Message;
+            await GetAllSalesreps();
+            await grid.Reload();
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = response.Message;
+        }
+        _notify.Notify(notification);
+    }
+
+    async Task OpenResetModal(long userId)
+    {
+        var response = await _dialog.OpenAsync<ResetUserPassword>($"Reset Password",
+                 new Dictionary<string, object>() { { "UserId", userId } },
+                 new DialogOptions()
+                     {
+                         Width = "35%"
+                     });
+
+        if (response != null && response.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = "Password has been reset.";
+            _notify.Notify(notification);
+        }
+    }
+
+    async Task GetAllSalesreps()
+    {
+        AllSalesreps = await _http.GetAllRecords<IEnumerable<SalesrepBO>>($"/Customer/GetAllSalesreps?companyId={_state.CompanyId}");
+    }
+
+    async Task DeleteSalesrep(SalesrepBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete {row.FirstName} {row.LastName}",
+                     new ConfirmOptions()
+                         {
+                             OkButtonText = "Yes",
+                             CancelButtonText = "No"
+                         });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/Customer/DeleteSalesrep", row.UserId);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                notification.Summary = response.Message;
+                await GetAllSalesreps();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+                notification.Summary = response.Message;
+            }
+            _notify.Notify(notification);
+        }
+    }
+
+    async Task ShowRepFeatures(SalesrepBO row)
+    {
+        var response = await _dialog.OpenAsync<ManageUserFeatures>($"Salesrep Features",
+                new Dictionary<string, object>() { { "UserId", row.UserId },{ "IsPopup", true } },
+                new DialogOptions()
+                    {
+                        Width = "45%"
+                    });
+    }
+}

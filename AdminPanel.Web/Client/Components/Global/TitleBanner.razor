@@ -1,0 +1,21 @@
+﻿<!--=====================================
+                    BANNER PART START
+        =======================================-->
+<section class="inner-section single-banner" style="background: url(theme/images/single-banner.jpg) no-repeat center;">
+    <div class="container">
+        <h2>@Title</h2>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Title</li>
+            <li class="fa fa-question-circle m-1 text-white cursor" title="Need Help?"></li>
+        </ol>
+    </div>
+</section>
+<!--=====================================
+            BANNER PART END
+=======================================-->
+@code {
+    [Parameter]
+    public string? Title { get; set; }
+
+}

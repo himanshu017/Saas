@@ -1,0 +1,85 @@
+﻿
+<div class="row">
+    <ul class="featureUL">
+        @foreach (var item in features)
+        {
+            <li>
+                <label>
+                    <input type="checkbox" checked="@(item.Value)" @onchange="eventArgs => { OnCheckedChange(item, eventArgs.Value); }" />
+                    @(StaticHelpers.FeatureNameSimplified[item.Key])
+                </label>
+            </li>
+        }
+    </ul>
+</div>
+
+<RadzenButton class="w-100" Text="Save Features" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@OnFeatureSave" />
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 4000 };
+
+    [Parameter]
+    public long UserId { get; set; }
+    [Parameter]
+    public bool IsPopup { get; set; } = false;
+
+    UserFeaturesBO featuresModel = new();
+
+    Dictionary<string, bool> features = new Dictionary<string, bool>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetFeaturesByUserId(UserId);
+    }
+
+    async Task OnFeatureSave()
+    {
+        featuresModel.UserId = UserId;
+        featuresModel.ModifiedBy = _state.UserId;
+        featuresModel.ModifiedOn = DateTime.UtcNow;
+
+        var res = await _http.PostRequest<BaseResponseBO>("/Customer/SaveUserFeatures", featuresModel);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = res.Message;
+
+            if (IsPopup)
+            {
+                _dialog.Close();
+            }
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = res.Message;
+        }
+
+        _notify.Notify(notification);
+    }
+
+    async Task GetFeaturesByUserId(long userId)
+    {
+        if (userId > 0)
+        {
+            featuresModel = await _http.GetAllRecords<UserFeaturesBO>($"/Customer/GetUserFeaturesByUserId?userId={userId}");
+            if (featuresModel != null)
+            {
+                features = JsonConvert.DeserializeObject<Dictionary<string, bool>>(featuresModel.ManagedFeatures);
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    void OnCheckedChange(KeyValuePair<string, bool> item, object val)
+    {
+        features[item.Key] = (bool)val;
+        featuresModel.ManagedFeatures = JsonConvert.SerializeObject(features);
+    }
+}

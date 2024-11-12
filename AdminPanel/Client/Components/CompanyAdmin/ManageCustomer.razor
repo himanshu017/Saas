@@ -1,0 +1,68 @@
+﻿
+<RadzenTabs SelectedIndex="0" Change="@OnTabChange">
+    <Tabs>
+        <RadzenTabsItem Text="Users">
+            <CustomerUsers CustomerId="@CustomerId" AllUsers="@AllUsers" ResetUsers="@GetCustomerUsers" />
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="User Features">
+            <RadzenDropDown class="form-control" Placeholder="Select user.." Data="@AllUsers" @bind-Value="selectedUser"
+                            TextProperty="FullName" ValueProperty="UserId" Change="OnChange" AllowClear="true" />
+            @if (selectedUser > 0)
+            {
+                <ManageUserFeatures UserId="@selectedUser" />
+            }
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="Manage Customer Addresses">
+            <CustomerAddresses CustomerId="@CustomerId" />
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 4000 };
+
+    RadzenDataGrid<CustomerUserBO> grid;
+
+    [Parameter]
+    public long CustomerId { get; set; }
+
+    IEnumerable<CustomerUserBO> AllUsers;
+
+    long selectedUser = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetCustomerUsers();
+    }
+
+    async Task GetCustomerUsers()
+    {
+        if (CustomerId > 0)
+        {
+            AllUsers = await _http.GetAllRecords<IEnumerable<CustomerUserBO>>($"/Customer/GetCustomerUsers?customerId={CustomerId}");
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    void OnTabChange(int index)
+    {
+        if (index == 1)
+        {
+            selectedUser = 0;
+        }
+    }
+
+    async Task OnChange(object val)
+    {
+        //await GetFeaturesByUserId((long)val);
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+}
+

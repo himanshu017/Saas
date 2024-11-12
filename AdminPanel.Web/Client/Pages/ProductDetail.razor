@@ -1,0 +1,290 @@
+﻿@page "/Product/{ProductId:long}"
+@using Newtonsoft.Json;
+
+@inject IHttpService _http
+
+@if (prod.ProductId == 0)
+{
+    return;
+}
+<HeadContent>
+    <link rel="stylesheet" href="theme/css/product-details.css?v=@(DateTime.Now.Ticks)">
+
+    <meta name="description" content="@prod.MetaTitle">
+    <meta name="keywords" content="@prod.MetaKeywords">
+</HeadContent>
+
+<TitleBanner Title="Product Detail" />
+
+<!--=====================================
+               PRODUCT DETAILS PART START
+       =======================================-->
+<section class="inner-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-5">
+                <div class="details-gallery">
+                    <div class="details-label-group">
+                        @if ((prod.IsRewardItem ?? false) && _state.ManagedFeatures.IsHighlightRewardItems)
+                        {
+                            <label class="label-text sale pulsate">Rewards</label>
+                        }
+                        @if (prod.IsNew)
+                        {
+                            <label class="label-text new">new</label>
+                        }
+                    </div>
+                    <ul class="details-preview">
+                        <li>
+                            @if (prod.ProductImages.Count() > 0)
+                            {
+                                <img src="@_state.ImagePath/ProductsImages/@_state.DomainName/@prod.ProductImages[0].ImageName" alt="@prod.Name">
+                            }
+                            else
+                            {
+                                <img src="@_state.ImagePath/ProductsImages/no-image.png" alt="@prod.Name">
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="details-content">
+                    <h3 class="details-name"><a href="#">@prod.Name</a></h3>
+                    <div class="details-meta">
+                        <p>SKU:<span>@prod.Code</span></p>
+                        <p>BRAND:<a href="#">@prod.BrandName</a></p>
+                    </div>
+                    <div class="details-rating">
+                        <i class="active icofont-star"></i>
+                        <i class="active icofont-star"></i>
+                        <i class="active icofont-star"></i>
+                        <i class="active icofont-star"></i>
+                        <i class="icofont-star"></i>
+                        <a href="javascript:;">(3 reviews)</a>
+                    </div>
+                    <h3 class="details-price">
+                        <del>$38.00</del>
+                        <span>@((prod.Price + priceAdjustment).ToPrice(_state.CurrencyInfo))<small>/@prod.UnitCode</small></span>
+                    </h3>
+                    <p class="details-desc">@((MarkupString)prod.ShortDescription)</p>
+
+                    <AttributesDisplay Prod="@prod"
+                                       OnSelectionChange="OnAttrSelectionChange" />
+
+                    @if (prod.ProductTags.Count > 0)
+                    {
+                        <div class="details-list-group">
+                            <label class="details-list-title">tags:</label>
+                            <ul class="details-tag-list">
+                                @foreach (var tag in prod.ProductTags)
+                                {
+                                    <li><a href="javascript:;">@tag</a></li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    <div class="details-list-group">
+                        <label class="details-list-title">Share:</label>
+                        <ul class="details-share-list">
+                            <li><a href="javascript:;" class="icofont-facebook" title="Facebook"></a></li>
+                            <li><a href="javascript:;" class="icofont-twitter" title="Twitter"></a></li>
+                            <li><a href="javascript:;" class="icofont-linkedin" title="Linkedin"></a></li>
+                            <li><a href="javascript:;" class="icofont-instagram" title="Instagram"></a></li>
+                        </ul>
+                    </div>
+                    <div class="details-add-group">
+                        <AddProductToCart @ref="addToCart" Product="prod" IsDetailview="true" IsDisabled="isAddDisabled" IsProdDetail="true" />
+                    </div>
+                    <div class="details-action-group">
+                        <a class="details-wish wish" href="javascript:;" title="Add to favorite">
+                            <i class="icofont-list"></i>
+                            <span>add to list</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+        PRODUCT DETAILS PART END
+=======================================-->
+<!--=====================================
+          PRODUCT TAB PART START
+=======================================-->
+<section class="inner-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="product-details-frame">
+                    <h3 class="frame-title">Description</h3>
+                    <div class="tab-descrip">
+                        <p>
+                            @((MarkupString)prod.ShortDescription)
+                        </p>
+                        <p>
+                            @((MarkupString)prod.FullDescription)
+                        </p>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(prod.SpecificationAttributes))
+                {
+                    <div class="product-details-frame">
+                        <h3 class="frame-title">Specification</h3>
+                        <table class="table table-bordered">
+                            <tbody>
+                                @foreach (var item in specificationAttrs)
+                                {
+                                    <tr>
+                                        <th scope="row">@item.Key</th>
+                                        <td>@item.Value</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+            PRODUCT TAB PART END
+=======================================-->
+<!--=====================================
+         PRODUCT RELATED PART START
+=======================================-->
+@if (SuggestiveItems != null && SuggestiveItems.Count() > 0)
+{
+    <section class="inner-section">
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <div class="section-heading">
+                        <h2>similar items</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+
+                @foreach (var prod in SuggestiveItems)
+                {
+                    <ProductDisplay Prod="prod" />
+                }
+            </div>
+        </div>
+    </section>
+}
+<!--=====================================
+         PRODUCT RELATED PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    [Parameter]
+    public long ProductId { get; set; }
+
+    ProductListBO prod = new();
+    GetProdDetailBO model = new();
+
+    decimal? priceAdjustment = 0;
+    bool isAddDisabled = false;
+    AddProductToCart addToCart;
+    Dictionary<string, string> specificationAttrs = new();
+    List<ProductListBO> SuggestiveItems = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetProductDetails();
+        await GetSuggestiveProducts();
+    }
+
+    async Task GetProductDetails()
+    {
+        loading.Start();
+        try
+        {
+            model.CompanyId = _state.CompanyId;
+            model.CustomerId = _state.CustomerId;
+            model.UserId = _state.UserId;
+            model.ProductId = ProductId;
+            var response = await _http.PostRequest<GenericResponse<ProductListBO>>($"api/Product/GetProductDetail", model, cts);
+
+            if (response.IsSuccess)
+            {
+                prod = response.Data;
+                if (!string.IsNullOrEmpty(prod.SpecificationAttributes))
+                {
+                    var attr = JsonConvert.DeserializeObject<List<ProductSpecificationBO>>(prod.SpecificationAttributes);
+                    specificationAttrs = attr.ToDictionary(attr => attr.Property, attr => attr.Value);
+                }
+            }
+            else
+            {
+                prod = null;
+            }
+        }
+        finally
+        {
+            loading.Stop();
+            StateHasChanged();
+        }
+    }
+
+    async Task OnAttrSelectionChange(AttrEventcallbackBO response)
+    {
+        Console.WriteLine(JsonConvert.SerializeObject(response.SelectedAttributes));
+        Console.WriteLine(response.PriceAdjustment);
+
+        priceAdjustment = response.PriceAdjustment;
+
+        isAddDisabled = !response.RequiredAttributes.All(x => response.SelectedAttributes.ContainsKey(x));
+
+        prod.AttributePriceAdjustment = priceAdjustment;
+        prod.AttributeMappingJson = JsonConvert.SerializeObject(response.SelectedAttributes);
+
+        StateHasChanged();
+
+        await addToCart.Refresh(prod);
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+
+    async Task GetSuggestiveProducts()
+    {
+        loading.Start();
+        try
+        {
+            var suggestiveModel = new GetProductListBO()
+                {
+                    CompanyId = _state.CompanyId,
+                    CustomerId = _state.CustomerId,
+                    UserId = _state.UserId,
+                    IsSuggestive = true,
+                    ProductId = ProductId,
+                    PageNumber = 0,
+                    PageSize = 5
+                };
+
+            var response = await _http.PostRequest<GenericResponse<List<ProductListBO>>>($"api/Product/GetSuggestiveProducts", suggestiveModel, cts);
+
+            if (response.IsSuccess)
+            {
+                SuggestiveItems = response.Data;
+            }
+            else
+            {
+                SuggestiveItems = null;
+            }
+        }
+        finally
+        {
+            loading.Stop();
+            StateHasChanged();
+        }
+    }
+}

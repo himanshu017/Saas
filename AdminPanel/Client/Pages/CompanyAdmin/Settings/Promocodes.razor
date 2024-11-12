@@ -1,0 +1,356 @@
+﻿@page "/Promocode"
+@inject DialogService _dialog
+<PageHeader Title="Discount Info" />
+<Loading @ref="loading" />
+
+
+@if (listing)
+{
+    <RadzenButton Text="Add" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="@AddNew" class="mb-2" />
+    <RadzenDataGrid TItem="DiscountBO" Data="@allDiscounts">
+        <Columns>
+            <RadzenDataGridColumn TItem="DiscountBO" Property="Name" Title="Title" />
+            <RadzenDataGridColumn TItem="DiscountBO" Property="DiscountType" Title="Type" />
+            <RadzenDataGridColumn TItem="DiscountBO" Property="MinCartValue" Title="Min Cart Value">
+                <Template Context="row">
+                    <span>@($"{row.MinCartValue:c2}")</span>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DiscountBO" Property="Discount" Title="Amount">
+                <Template Context="row">
+                    @if (row.UsePercentage)
+                    {
+                        <span>@row.DiscountPercentage%  Upto - @(row.MaxDiscountAmount.HasValue ? $"{row.MaxDiscountAmount:c2}" : "N/A")</span>
+                    }
+                    else
+                    {
+                        <span>@($"{row.DiscountAmount:c2}")</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DiscountBO" Property="CouponCode" Title="Code" Width="100px">
+                <Template Context="row">
+                    @if (row.RequiresCouponCode)
+                    {
+                        <span>@row.CouponCode</span>
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DiscountBO" Property="LimitationTypeDesc" Title="Limitation" />
+            <RadzenDataGridColumn TItem="DiscountBO" Property="LimitationTimes" Title="Limit" Width="70px"/>
+            <RadzenDataGridColumn TItem="DiscountBO" Property="StartDate" Title="Start Date" />
+            <RadzenDataGridColumn TItem="DiscountBO" Property="EndDate" Title="End Date" />
+            <RadzenDataGridColumn TItem="DiscountBO" Property="IsActive" Title="Status" Width="80px" CssClass="text-center" Sortable="false">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="DiscountBO" Title="" Width="100px">
+                <Template Context="row">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="edit" Click="@(() => EditMode(row))" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Click="@(() => Delete(row))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <RadzenCard>
+        <RadzenTemplateForm TItem="DiscountBO" Data="@model" Submit="AddEditDiscount">
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Title</label>
+                <div class="col-sm-9">
+                    <RadzenTextBox @bind-Value="model.Name" MaxLength="100" class="form-control" Name="Title" />
+                    <RadzenRequiredValidator Component="Title" Text="Title is required" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Discount Type</label>
+                <div class="col-sm-3">
+                    <RadzenDropDown Data="@discountTypes" ValueProperty="Id" TextProperty="Description"
+                                @bind-Value="discountType" Change=@OnDiscountTypeChange class="w-100" Name="Type" />
+                    <RadzenRequiredValidator Component="Type" Text="Discount Type is required" />
+                </div>
+            </div>
+
+            @if (model.TypeId == (byte)DiscountTypes.Selected_products)
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Select Products</label>
+                    <div class="col-sm-8">
+                        <RadzenButton Text="Choose Products" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(false))" />
+                        <span>@selected</span>
+                    </div>
+                </div>
+            }
+
+            @if (model.TypeId == (byte)DiscountTypes.Selected_Customers)
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Select Customers</label>
+                    <div class="col-sm-8">
+                        <RadzenButton Text="Choose Customers" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(true))" />
+                        <span>@selected</span>
+                    </div>
+                </div>
+            }
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Min Cart Value</label>
+                <div class="col-sm-3">
+                    <RadzenNumeric @bind-Value="model.MinCartValue" TValue="decimal?" class="form-control" Name="Cval" />
+                    <RadzenRequiredValidator Visible="@model.UsePercentage" Component="Cval" Text="Min cart value is required" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Use Percentage</label>
+                <div class="col-sm-3">
+                    <RadzenSwitch @bind-Value="model.UsePercentage" />
+                </div>
+            </div>
+
+            @if (model.UsePercentage)
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Discount Percentage</label>
+                    <div class="col-sm-3">
+                        <RadzenNumeric @bind-Value="model.DiscountPercentage" TValue="double?" class="form-control" Name="Perc" />
+                        <RadzenRequiredValidator Visible="@model.UsePercentage" Component="Perc" Text="Discount Percentage is required" />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Max Discount Amount</label>
+                    <div class="col-sm-3">
+                        <RadzenNumeric @bind-Value="model.MaxDiscountAmount" TValue="decimal?" class="form-control" Name="MaxDiscount" Max="model.MinCartValue" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Discount Amount</label>
+                    <div class="col-sm-3">
+                        <RadzenNumeric @bind-Value="model.DiscountAmount" TValue="decimal?" class="form-control" Name="Amount" Max="model.MinCartValue" />
+                        <RadzenRequiredValidator Component="Amount" Text="Discount Amount is required" />
+                    </div>
+                </div>
+            }
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Requires Coupon Code</label>
+                <div class="col-sm-3">
+                    <RadzenSwitch @bind-Value="model.RequiresCouponCode" />
+                </div>
+            </div>
+
+            @if (model.RequiresCouponCode)
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Code</label>
+                    <div class="col-sm-3">
+                        <RadzenTextBox @bind-Value="model.CouponCode" MaxLength="100" class="form-control" Name="Coupon" />
+                        <RadzenRequiredValidator Visible="@model.RequiresCouponCode" Component="Coupon" Text="Coupon is required" />
+                    </div>
+                </div>
+            }
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Start Date</label>
+                <div class="col-sm-3">
+                    <RadzenDatePicker DateFormat="d" @bind-Value="model.StartDate" TValue="DateTime?" class="w-100" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">End Date</label>
+                <div class="col-sm-3">
+                    <RadzenDatePicker DateFormat="d" @bind-Value="model.EndDate" TValue="DateTime?" class="w-100" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Discount Limitation</label>
+                <div class="col-sm-3">
+                    <RadzenDropDown Data="@limitationTypes" ValueProperty="Id" TextProperty="Description"
+                                @bind-Value="limitationType" Change=@(() => model.LimitationTypeId = (byte)limitationType) class="w-100" />
+
+                </div>
+            </div>
+
+            @if (limitationType > (byte)DiscountLimitationTypes.Unlimited)
+            {
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">N Times</label>
+                    <div class="col-sm-3">
+                        <RadzenNumeric @bind-Value="model.LimitationTimes" TValue="byte?" class="form-control" Name="Limit" />
+                        <RadzenRequiredValidator Component="Limit" Text="Limit times is required" />
+                    </div>
+                </div>
+            }
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Description</label>
+                <div class="col-sm-9">
+                    <RadzenTextArea @bind-Value="model.Description" MaxLength="200" class="form-control" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label">Active</label>
+                <div class="col-sm-9">
+                    <RadzenSwitch @bind-Value="model.IsActive" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-3 col-form-label"></label>
+                <div class="col-sm-9">
+                    <RadzenButton Text='@(model.Id > 0 ? "Update Record":"Save Record")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+                    <RadzenButton Text="Cancel" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => listing = true)" />
+                </div>
+            </div>
+
+        </RadzenTemplateForm>
+    </RadzenCard>
+}
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    Loading loading;
+    bool listing = true;
+    DiscountBO model = new();
+    IEnumerable<DiscountBO> allDiscounts;
+    IEnumerable<CommonDropdownBO> discountTypes;
+    IEnumerable<CommonDropdownBO> limitationTypes;
+    int discountType = 0;
+    int limitationType = (byte)DiscountLimitationTypes.Unlimited;
+    string selected => model.ProductCustomerSelections?.Count() > 0 ? $"{model.ProductCustomerSelections.Count()} Selected" : "0 Selected";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetDiscounts();
+        await GetInitialRecords();
+    }
+
+
+    async Task GetDiscounts()
+    {
+        loading.ShowLoading();
+        allDiscounts = await _http.GetAllRecords<IEnumerable<DiscountBO>>($"/Discount/GetAllRecords?companyId={_state.CompanyId}");
+        loading.StopLoading();
+    }
+
+    async Task GetInitialRecords()
+    {
+        discountTypes = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>("/common/GetDiscountType");
+        limitationTypes = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>("/common/GetDiscountLimitationType");
+    }
+
+    void OnDiscountTypeChange(object val)
+    {
+        var typeId = Convert.ToByte(val);
+        model.TypeId = typeId;
+        model.ProductCustomerSelections = null;
+    }
+
+    async void AddNew()
+    {
+        listing = false;
+        model = new();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditMode(DiscountBO row)
+    {
+        model = (DiscountBO)row.Clone();
+        listing = false;
+        discountType = model.TypeId;
+        limitationType = (int)model.LimitationTypeId;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowMultiSelect(bool isCustomer)
+    {
+        var res = await _dialog.OpenAsync<MultiSelection>(isCustomer ? "Select Customers" : "Select Products",
+               new Dictionary<string, object>() { { "IsCustomer", isCustomer },
+                                                  { "PreviousSelection", model.ProductCustomerSelections } },
+           new DialogOptions()
+               {
+                   Width = "65%"
+               });
+
+        if (res != null)
+        {
+            model.ProductCustomerSelections = res;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEditDiscount()
+    {
+        if (model.Id == 0)
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        model.CompanyId = _state.CompanyId;
+
+        loading.ShowLoading();
+
+        var res = await _http.PostRequest<BaseResponseBO>("/Discount/AddEditDiscount", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            await GetDiscounts();
+            listing = true;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        loading.StopLoading();
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+    }
+
+    async Task Delete(DiscountBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete discount",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            loading.ShowLoading();
+            var res = await _http.PostRequest<BaseResponseBO>("/Discount/DeleteDiscount", row.Id);
+
+            if (res.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                await GetDiscounts();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            loading.StopLoading();
+            notification.Summary = res.Message;
+            _notify.Notify(notification);
+        }
+    }
+}

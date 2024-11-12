@@ -1,0 +1,135 @@
+﻿@inject HttpClient _httpClient
+@inject IStateService _state
+
+<GridInsertButton Grid="grid" TItem="ProductUnitsBO" OnCreateItem="@(() => new ProductUnitsBO())"
+                  Disabled="@(_state.ManagedFeatures.IsDynamicUOM == false && (ProdUnits!= null && ProdUnits.Count() > 0))" />
+
+<RadzenDataGrid @ref="grid" TItem="ProductUnitsBO" Data="@ProdUnits" PageSize="10" AllowPaging="true" Density="Density.Compact"
+                EditMode="DataGridEditMode.Single"
+                RowUpdate="@((row) => AddEditUnits(row,ProdUnits.ToList().IndexOf(row)))"
+                RowCreate="@((row) => AddEditUnits(row,ProdUnits.ToList().IndexOf(row)))">
+    <Columns>
+        <RadzenDataGridColumn TItem="ProductUnitsBO" Property="UnitName" Title="Name">
+            <Template Context="row">
+                <span>@row.UnitName</span>
+            </Template>
+            <EditTemplate Context="row">
+                @{
+                    var existingUnits = ProdUnits.Where(x => x.UnitId != row.UnitId).Select(s => s.UnitId);
+                }
+
+                <RadzenDropDown Data="@allunits.Where(x => !existingUnits.Contains(x.UnitId))" class="form-control" @bind-Value="row.UnitId"
+                                TextProperty="Name" ValueProperty="UnitId" TValue="long" Name="PUnit"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+                <RadzenRequiredValidator Component="PUnit" Text="Unit is required" Popup="true" Style="position: absolute" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductUnitsBO" Property="UnitQuantity" Title="Qty/Unit">
+            <Template Context="row">
+                <span>@row.UnitQuantity</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenNumeric @bind-Value="row.UnitQuantity" TValue="int?" Min="1" class="form-control" Name="UQty" />
+                <RadzenRequiredValidator Component="UQty" Text="Unit Qty is required" Popup="true" Style="position: absolute" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductUnitsBO" Property="Weight" Title="Weight">
+            <Template Context="row">
+                <span>@row.Weight</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenNumeric @bind-Value="row.Weight" TValue="decimal?" Min="0" class="form-control" Max="100" Name="Weight" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductUnitsBO" Property="IsDefault" Title="Default">
+            <Template Context="row">
+                <RadzenBadge BadgeStyle="@((row.IsDefault ?? false) ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@((row.IsDefault ?? false) ? "Yes" : "No")" />
+            </Template>
+            <EditTemplate Context="row">
+                @{
+                    var hasDefault = ProdUnits.Count(x => x.IsDefault == true && x.UnitId != row.UnitId) > 0;
+                    if (ProdUnits.Count() == 0)
+                    {
+                        row.IsDefault = true;
+                    }
+                }
+                <RadzenCheckBox @bind-Value="row.IsDefault" Disabled="@(hasDefault || ProdUnits.Count() == 0)" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="ProductUnitsBO" Property="OrderMultiples" Title="Order multiples">
+            <Template Context="row">
+                <RadzenBadge BadgeStyle="@((row.OrderMultiples ?? false) ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@((row.OrderMultiples ?? false) ? "Yes" : "No")" />
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenCheckBox @bind-Value="row.OrderMultiples" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <GridControls TItem="ProductUnitsBO" Grid="grid" Width="120px" DeleteRow="DeleteUnit" />
+    </Columns>
+</RadzenDataGrid>
+
+@if (ProdUnits.Count() == 0)
+{
+    <p class="text-danger">Please add at least one Unit of measurement for the product.</p>
+}
+
+@code {
+    [Parameter]
+    public long ProductId { get; set; }
+
+    [Parameter]
+    public List<ProductUnitsBO>? ProdUnits { get; set; }
+
+    [Parameter]
+    public EventCallback<List<ProductUnitsBO>?> OnUnitsChange { get; set; }
+
+    RadzenDataGrid<ProductUnitsBO>? grid;
+    IEnumerable<UnitOfMeasureBO> allunits;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetAllUnitOfMeasure(_state.CompanyId);
+    }
+
+    async Task GetAllUnitOfMeasure(long id)
+    {
+        allunits = await _httpClient.GetFromJsonAsync<IEnumerable<UnitOfMeasureBO>>($"Categories/GetAllUnitofMeasures?cid={id}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void AddEditUnits(ProductUnitsBO row, int idx)
+    {
+        var unitList = ProdUnits.ToList();
+
+        if (unitList.Count() > 0 && idx != -1)
+        {
+            unitList.RemoveAt(idx);
+        }
+
+        row.UnitName = allunits.FirstOrDefault(x => x.UnitId == row.UnitId).Name;
+        row.ProductId = ProductId;
+        unitList.Add(row);
+
+        ProdUnits = unitList;
+
+        await OnUnitsChange.InvokeAsync(ProdUnits);
+        StateHasChanged();
+    }
+
+    async void DeleteUnit(ProductUnitsBO row)
+    {
+        var unitList = ProdUnits.ToList();
+        unitList.Remove(row);
+        ProdUnits = unitList;
+
+        await OnUnitsChange.InvokeAsync(ProdUnits);
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,112 @@
+﻿@inject HttpClient _http
+
+<RadzenTemplateForm TItem="AttributeValuesBO" Submit="AddUpdateAttributeValue" Data="Model">
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeSM="6">
+            <RadzenStack>
+                <RadzenFormField Text="Value" Variant="Variant.Outlined">
+                    <ChildContent>
+                        <RadzenTextBox @bind-Value="@Model.Value" Name="AttrValue" />
+                    </ChildContent>
+                    <Helper>
+                        <RadzenRequiredValidator Component="AttrValue" Text="Attribute value is required" />
+                    </Helper>
+                </RadzenFormField>
+                <RadzenFormField Text="Weight Change" Variant="Variant.Outlined">
+                    <RadzenNumeric @bind-Value="Model.WeightAdjustment" TValue="decimal?" />
+                </RadzenFormField>
+                <RadzenFormField Text="Price Change" Variant="Variant.Outlined">
+                    <Start>
+                        @if (Model.UsePercentage ?? false)
+                        {
+                            <RadzenIcon Icon="percent" />
+                        }
+                        else
+                        {
+                            @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                        }
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="Model.PriceAdjustment" TValue="decimal?" />
+                    </ChildContent>
+                </RadzenFormField>
+                <RadzenFormField Text="Stock Qty" Variant="Variant.Outlined">
+                    <RadzenNumeric @bind-Value="Model.StockQuantity" TValue="int?" />
+                </RadzenFormField>
+                <div>
+                    <RadzenCheckBox TValue="bool?" Name="chkUsePercent" @bind-Value="Model.UsePercentage" />
+                    <RadzenLabel Text="Price Change in Percentage" Component="chkUsePercent" />
+                </div>
+                <div>
+                    <RadzenCheckBox TValue="bool?" Name="chkIsPre" @bind-Value="Model.IsPreSelected" />
+                    <RadzenLabel Text="Is Pre Selected" Component="chkIsPre" />
+                </div>
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeSM="6">
+            <RadzenStack>
+                <RadzenFormField Text="Color" Variant="Variant.Outlined">
+                    <RadzenColorPicker @bind-Value="Model.ColorRgb" />
+                </RadzenFormField>
+                <RadzenFormField Text="Display Order" Variant="Variant.Outlined">
+                    <Start>
+                        <RadzenIcon Icon="low_priority" />
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="Model.DisplayOrder" TValue="byte?" Min="0" />
+                    </ChildContent>
+                </RadzenFormField>
+                <RadzenFormField Text="Cost Price Change" Variant="Variant.Outlined">
+                    <Start>
+                        @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="Model.CostPrice" TValue="decimal?" />
+                    </ChildContent>
+                </RadzenFormField>
+                <RadzenFormField Text="Min Quantity" Variant="Variant.Outlined">
+                    <RadzenNumeric @bind-Value="Model.MinQuantity" TValue="double?" />
+                </RadzenFormField>
+                <div class="d-flex justify-content-end">
+                    <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" class="me-2" ButtonType="ButtonType.Submit" />
+                    <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _dialog.Close())" />
+                </div>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter]
+    public int MappingId { get; set; }
+
+    [Parameter]
+    public AttributeValuesBO Model { get; set; } = new(); // new if its adding a new value else update the existing.
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+    }
+
+    async Task AddUpdateAttributeValue()
+    {
+        Model.ProductMappingId = MappingId;
+
+        var requset = await _http.PostAsJsonAsync("Attribute/AddUpdateAttributeValue", Model);
+
+        if (requset.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(requset.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                _dialog.Close(true);
+            }
+            else
+            {
+                _notifyS.ErrorMsg(response.Message);
+            }
+        }
+    }
+}

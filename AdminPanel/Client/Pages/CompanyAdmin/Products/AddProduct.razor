@@ -1,0 +1,585 @@
+﻿@page "/AddProduct"
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+@inject DialogService dialogService
+@inject HttpClient _httpClient
+@inject NavigationManager NavManager
+@inject IStateService _state
+@inject NotificationService _notify
+@inject IJSRuntime _js
+<PageHeader Title="@(Model.ProductId == 0 ? "Add Product":"Edit Product")">
+</PageHeader>
+
+<EditForm Model="@Model">
+    <DataAnnotationsValidator />
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Product Name" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.Name" MaxLength="100" class="form-control" />
+            <ValidationMessage For="() => Model.Name" />
+
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Code / ISBN" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.Code" MaxLength="50" class="form-control" />
+            <ValidationMessage For="() => Model.Code" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Price" />
+        </div>
+        <div class="col-md-3">
+            <RadzenFormField Text="" class="w-100">
+                <Start>
+                    @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                </Start>
+                <ChildContent>
+                    <RadzenNumeric @bind-Value="Model.Price" TValue="decimal" Format="f2" Min="0" class="form-control w-100" />
+                </ChildContent>
+            </RadzenFormField>
+            <ValidationMessage For="() => Model.Price" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Cost Price" />
+        </div>
+        <div class="col-md-3">
+            <RadzenFormField Text="" class="w-100">
+                <Start>
+                    @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                </Start>
+                <ChildContent>
+                    <RadzenNumeric @bind-Value="Model.CostPrice" TValue="decimal?" Format="f2" Min="0" class="form-control w-100" />
+                </ChildContent>
+            </RadzenFormField>
+            <ValidationMessage For="() => Model.CostPrice" />
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Brand / Author" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.BrandName" MaxLength="100" class="form-control" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Supplier / Publication" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.SupplierName" MaxLength="100" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Filter" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown Data="@allfilters" class="form-control" @bind-Value="Model.FilterId"
+                            TextProperty="Name" ValueProperty="FilterId"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Discount Price" />
+        </div>
+        <div class="col-md-3">
+            <RadzenFormField Text="" class="w-100">
+                <Start>
+                    @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                </Start>
+                <ChildContent>
+                    <RadzenNumeric @bind-Value="Model.DiscountPrice" TValue="decimal?" Format="f2" Min="0" class="form-control w-100" />
+                </ChildContent>
+            </RadzenFormField>
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Main Category" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown Data="@allCategoires" class="form-control" @bind-Value="Model.MainCategoryId"
+                            Change="GetAllSubCategories" TextProperty="CategoryName" ValueProperty="Id"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />
+            <ValidationMessage For="() => Model.MainCategoryId" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Sub Category" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown Data="@allSubCategoires" class="form-control" @bind-Value="Model.CategoryId" Disabled="@(Model.MainCategoryId == 0)"
+                            TextProperty="SubCategoryName" ValueProperty="Id"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" />
+            <ValidationMessage For="() => Model.MainCategoryId" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Suggestive Products" />
+        </div>
+        <div class="col-md-3">
+            <RadzenButton Text="Choose Products" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(false))" />
+            <RadzenButton Icon="close" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => Model.SuggestiveProductIds = null)" />
+            <span>@(Model.SuggestiveProductIds?.Count() > 0 ? $"{Model.SuggestiveProductIds?.Count()} Selected" : "0 Selected")</span>
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Specification Attributes" />
+        </div>
+        <div class="col-md-3">
+            <RadzenButton Text="Manage Specification Attributes"
+                          ButtonType="ButtonType.Button"
+                          ButtonStyle="ButtonStyle.Primary"
+                          class="w-100"
+                          Click="@(() => ShowSpecAttributes(Model.SpecificationAttributes))" />
+        </div>
+    </div>
+
+    <div class="row mb-2  bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Meta Title" />
+        </div>
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="Model.MetaTitle" MaxLength="200" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Meta Keywords" />
+        </div>
+        <div class="col-md-9">
+            <InputTags Existing="metaKeywords"
+                       OnInputChange="@((val) => metaKeywords = val )"
+                       AddDefault="false"
+                       Placeholder="Add Keyword. Press enter to start entering next." />
+
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Product Tags" />
+        </div>
+        <div class="col-md-9">
+            <InputTags @ref="tagsInput" Existing="Model.ProductTags"
+                       OnInputChange="@((val) => Model.ProductTags = val )"
+                       AddDefault="false"
+                       AllTags="existingTags"
+                       ShowSearch="true" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is Available" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsAvailable" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="GST" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsGst" />
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is New" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsNew" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is Core" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsCore" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is BuyIn" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsBuyIn" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is Donation Item" />
+        </div>
+        <div class="col-md-3">
+            <RadzenSwitch @bind-Value="@Model.IsDonationItem" />
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Product Units" />
+        </div>
+        <div class="col-md-9">
+            <ProductUnits ProductId="Model.ProductId"
+                          ProdUnits="prodUnits"
+                          OnUnitsChange="((units) => prodUnits = units)" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Product Attributes" />
+        </div>
+        <div class="col-md-9">
+            <RadzenButton Text="Add Attribute" Icon="add_circle_outline" Size="ButtonSize.Small" Click="AddAttributes" class="mb-2" />
+
+            @if (ProductId.HasValue)
+            {
+                <ProductAttributeListing ProductId="ProductId" />
+            }
+        </div>
+    </div>
+
+    <div class="row mb-2 bg-light p-1">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Product Images" />
+        </div>
+        <div class="col-md-9">
+            <InputFile OnChange="OnInputFileChange" id="img-upload" accept="image/png, image/gif, image/jpeg" multiple class="form-control" />
+
+            @if (list.Count > 0)
+            {
+                <div class="card mt-1">
+                    <div class="card-body">
+                        @foreach (var file in list)
+                        {
+                            <img class="rounded m-1" @key="file.Name" src="@file.ImageDataUrl" height="110" />
+                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Click="@(args => RemoveImage(file))" />
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <RadzenAccordion class="mb-2">
+        <Items>
+            <RadzenAccordionItem Text="Product Descriptions">
+                <div class="row mb-2">
+                    <div class="align-items-center d-flex col-md-3">
+                        <RadzenLabel Text="Short Description" />
+                    </div>
+                    <div class="col-md-9">
+                        <RadzenHtmlEditor @bind-Value="@Model.ShortDescription" style="height: 400px; margin-bottom: 1rem;" UploadUrl="upload/image" />
+                    </div>
+
+                </div>
+                <div class="row mb-2 bg-light p-1">
+
+                    <div class="align-items-center d-flex col-md-3">
+                        <RadzenLabel Text="Full Description" />
+                    </div>
+                    <div class="col-md-9">
+                        <RadzenHtmlEditor @bind-Value="@Model.FullDescription" style="height: 400px; margin-bottom: 1rem;" UploadUrl="upload/image" />
+                    </div>
+                </div>
+
+            </RadzenAccordionItem>
+        </Items>
+    </RadzenAccordion>
+
+    <div class="row mb-2">
+        <div class="col-md-3">
+            <RadzenButton class="w-100" Text='@(Model.ProductId == 0 ? "Save Product":"Update Product")'
+                          ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="AddProducts" />
+        </div>
+        <div class="col-md-3">
+            <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" Click="@(()=>ReturnToHome())" ButtonStyle="ButtonStyle.Secondary" />
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "x")]
+    public long? ProductId { get; set; }
+
+    [Parameter]
+    public ProductBO Model { get; set; } = new();
+    private CancellationTokenSource cts = new CancellationTokenSource();
+
+    IEnumerable<CategoriesBO>? allCategoires;
+    IEnumerable<SubCategoriesBO>? allSubCategoires;
+    IEnumerable<FiltersBO>? allfilters;
+    IEnumerable<UnitOfMeasureBO>? allunits;
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile>? selectedFiles;
+    List<FileViewModel> list = new List<FileViewModel>();
+    List<ProductUnitsBO>? prodUnits = new();
+
+    List<string>? metaKeywords = null;
+    List<string>? existingTags;
+    string newTag = "";
+    List<string>? prodTags;
+    InputTags? tagsInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+
+        _loading.Start();
+
+        await GetAllCategories(_state.CompanyId);
+        await GetAllFilters(_state.CompanyId);
+        await EditProduct();
+
+        _loading.Stop();
+    }
+
+    async Task AddProducts()
+    {
+        if (Model.ProductId == 0)
+        {
+            Model.CreatedBy = _state.UserId;
+            Model.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            Model.ModifiedBy = _state.UserId;
+            Model.ModifiedOn = DateTime.UtcNow;
+        }
+        Model.CompanyId = _state.CompanyId;
+        Model.DomainName = _state.DomainName;
+        Model.ProductImagesList = list;
+        Model.Units = prodUnits;
+        if (metaKeywords?.Count > 0)
+        {
+            Model.MetaKeywords = string.Join(",", metaKeywords);
+        }
+        //loading.ShowLoading();
+        var res = await _httpClient.PostAsJsonAsync("Product/AddEditProduct", Model, cts.Token);
+
+        if (res.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(res.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                notification.Summary = response.Message;
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Success;
+                notification.Summary = response.Message;
+            }
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = await res.Content.ReadAsStringAsync();
+        }
+        _notify.Notify(notification);
+        NavManager.NavigateTo("/Products");
+        await InvokeAsync(StateHasChanged);
+        // loading.StopLoading();
+    }
+
+    async Task GetAllCategories(long id)
+    {
+        allCategoires = await _httpClient.GetFromJsonAsync<IEnumerable<CategoriesBO>>($"Categories/GetAllCategories?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllSubCategories()
+    {
+        allSubCategoires = await _httpClient.GetFromJsonAsync<IEnumerable<SubCategoriesBO>>($"Categories/GetAllSubCategoryById?Id={Model.MainCategoryId}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllFilters(long id)
+    {
+        allfilters = await _httpClient.GetFromJsonAsync<IEnumerable<FiltersBO>>($"Categories/GetAllFilters?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllUnitOfMeasure(long id)
+    {
+        allunits = await _httpClient.GetFromJsonAsync<IEnumerable<UnitOfMeasureBO>>($"Categories/GetAllUnitofMeasures?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditProduct()
+    {
+        if (ProductId.HasValue)
+        {
+            string DomainName = _state.DomainName;
+            Model = await _httpClient.GetFromJsonAsync<ProductBO>($"Product/GetProductByid?pid={ProductId}&d={DomainName}", cts.Token);
+            list = Model.ProductImagesList.ToList();
+            prodUnits = Model.Units.ToList();
+            metaKeywords = string.IsNullOrEmpty(Model.MetaKeywords) ? null : Model.MetaKeywords.Split(',').ToList();
+            existingTags = Model.AllExistingTags;
+            await GetAllSubCategories();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        var maxAllowedFiles = 4;
+        var allowedFormats = new[] { "image/png", "image/jpeg", "image/jpg" };
+        var maxFileSize = 5 * 1024 * 1024; // 5MB
+
+        foreach (var imageFile in selectedFiles)
+        {
+            if (list.Count >= maxAllowedFiles)
+            {
+                ShowNotification("Maximum of 4 files allowed", NotificationSeverity.Warning);
+                return;
+            }
+
+            if (list.Any(file => file.Name == imageFile.Name))
+            {
+                ShowNotification($"The file '{imageFile.Name}' already exists.", NotificationSeverity.Warning);
+                continue;
+            }
+
+            if (!allowedFormats.Contains(imageFile.ContentType))
+            {
+                ShowNotification($"Invalid file format for '{imageFile.Name}'. Only PNG and JPEG formats are allowed.", NotificationSeverity.Warning);
+                continue;
+            }
+
+            try
+            {
+                var buffer = new byte[imageFile.Size];
+                var bytesRead = await imageFile.OpenReadStream().ReadAsync(buffer);
+
+                if (bytesRead == maxFileSize)
+                {
+                    ShowNotification($"File '{imageFile.Name}' exceeds the maximum allowed size. Make sure the image size in less than 5MB", NotificationSeverity.Warning);
+                    continue;
+                }
+
+                var imageDataUrl = $"data:{imageFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+                list.Add(new FileViewModel
+                    {
+                        Content = buffer,
+                        ImageDataUrl = imageDataUrl,
+                        ContentType = imageFile.ContentType,
+                        Name = imageFile.Name,
+                        Size = imageFile.Size,
+                    });
+            }
+            catch (Exception ex)
+            {
+                ShowNotification($"Error processing file '{imageFile.Name}' : {ex.Message}", NotificationSeverity.Warning);
+            }
+        }
+
+        this.StateHasChanged();
+    }
+
+    private void RemoveImage(FileViewModel file)
+    {
+        list.Remove(file);
+    }
+
+    // 👇 Cancel the token
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+
+    async Task ReturnToHome()
+    {
+        NavManager.NavigateTo("/Products");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowNotification(string message, NotificationSeverity severity)
+    {
+        notification.Severity = severity;
+        notification.Summary = message;
+        _notify.Notify(notification);
+    }
+
+    void AddAttributes()
+    {
+        NavManager.NavigateTo($"/product/attribute?pId={ProductId}");
+    }
+
+    async Task ShowMultiSelect(bool isCustomer)
+    {
+        var res = await dialogService.OpenAsync<MultiSelection>(isCustomer ? "Select Customers" : "Select Products",
+               new Dictionary<string, object>() { { "IsCustomer", isCustomer },
+                                                  { "PreviousSelection", Model.SuggestiveProductIds }},
+           new DialogOptions()
+               {
+                   Width = "65%"
+               });
+
+        if (res != null)
+        {
+            Model.SuggestiveProductIds = res;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ShowSpecAttributes(string attributes)
+    {
+        var res = await dialogService.OpenAsync<ManageProductSpecifications>("Manage Product Specifications",
+              new Dictionary<string, object>() { { "ProductSpecificationAttribute", attributes } },
+              new DialogOptions()
+                  {
+                      Width = "55%"
+                  });
+
+        if (res != null)
+        {
+            Model.SpecificationAttributes = res;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnTagSearch(dynamic args)
+    {
+        string searchStr = args.ToString();
+
+        if (!string.IsNullOrEmpty(searchStr) && searchStr.Length > 2)
+        {
+            if (!Model.ProductTags.Any(s => s.Equals(searchStr.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                Model.ProductTags.Add(searchStr.Trim());
+            }
+            newTag = "";
+            await InvokeAsync(StateHasChanged);
+            await tagsInput.Refresh();
+        }
+    }
+
+    void OnInput(ChangeEventArgs args)
+    {
+        if (string.IsNullOrWhiteSpace(args.Value.ToString()))
+        {
+            
+        }
+    }
+}

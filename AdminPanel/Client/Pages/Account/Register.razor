@@ -1,0 +1,151 @@
+﻿@page "/RegisterDev"
+@page "/Onboarding"
+@*// register from admin using the first link else it will be a new process for onboarding the customer from the main EZ-Orders web site*@
+
+@inject CustomAuthenticationStateProvider _authProvider
+
+<AlertMessage AlertModel="@alert" />
+
+@if (showForm)
+{
+    <div class="card-body p-5 py-3">
+        <h1 class="fs-4 card-title fw-bold mb-4">Register</h1>
+        <EditForm Model="@model" class="needs-validation" novalidate="" autocomplete="off" OnValidSubmit="@RegisterCompany">
+            <DataAnnotationsValidator />
+            <div class="form-floating mb-3">
+                <RadzenTextBox @bind-Value="@model.FirstName" class="form-control" MaxLength="100" Placeholder="First Name" />
+                <label class="mb-2 text-muted" for="FirstName">First Name</label>
+                <ValidationMessage For="() => model.FirstName" />
+            </div>
+            <div class="form-floating mb-3">
+                <RadzenTextBox @bind-Value="@model.LastName" class="form-control" MaxLength="100" Placeholder="Last Name" />
+                <label class="mb-2 text-muted" for="name">Last Name</label>
+                <ValidationMessage For="() => model.LastName" />
+            </div>
+            <div class="form-floating mb-3">
+                <RadzenTextBox @bind-Value="@model.CompanyName" class="form-control" MaxLength="100" Placeholder="Company Name" />
+                <label class="mb-2 text-muted" for="name">Company Name</label>
+                <ValidationMessage For="() => model.CompanyName" />
+            </div>
+            <div class="form-floating mb-3">
+                <RadzenTextBox @bind-Value="@model.Email" class="form-control" MaxLength="100" Placeholder="E-Mail Address" />
+                <label class="mb-2 text-muted" for="email">E-Mail Address</label>
+                <ValidationMessage For="() => model.Email" />
+            </div>
+            <div class="form-floating mb-3">
+                <RadzenPassword @bind-Value="@model.Password" class="form-control" MaxLength="20" Placeholder="Password" />
+                <label class="mb-2 text-muted" for="password">Password</label>
+                <ValidationMessage For="() => model.Password" />
+            </div>
+            <div class="form-floating mb-3">
+                <RadzenTextBox @bind-Value="@model.DomainName" class="form-control"
+                           MaxLength="15"
+                           @oninput=@(args => domainName = args.Value.ToString().Trim())
+                           Placeholder="Domain Name" />
+
+                <label class="mb-2 text-muted" for="name">Domain Name</label>
+
+                <ValidationMessage For="() => model.DomainName" />
+                @if (!string.IsNullOrEmpty(domainName))
+                {
+                    <div class="form-text">https://@(domainName).saavi.com.au</div>
+                }
+            </div>
+            <p class="form-text text-muted mb-3">
+                By registering you agree with our <a href="javascript:;">Terms of Service & Privacy Policy</a>.
+            </p>
+
+            <div class="align-items-center d-flex">
+                <RadzenButton Text="Register" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Submit" class="ms-auto" />
+            </div>
+        </EditForm>
+    </div>
+    <div class="card-footer py-3 border-0">
+        <div class="text-center">
+            Already have an account? <a href="/Login" class="text-dark">Login</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card-body p-5 py-3">
+        <p>Did not recieve and email? Use the form below to resend the verification email.</p>
+        <EditForm autocomplete="off" Model="@resendModel" OnValidSubmit="@ResendVerificationLink">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="mb-2 text-muted" for="email">E-Mail</label>
+                <RadzenTextBox @bind-Value="@resendModel.Email" class="form-control" />
+                <ValidationMessage For="() => resendModel.Email" />
+            </div>
+            <div class="d-flex align-items-center">
+                <RadzenButton Text="Resend Code" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Submit" class="ms-auto" />
+            </div>
+        </EditForm>
+    </div>
+}
+
+
+<style>
+    .loginBg {
+        height: 100% !important;
+        min-height: 100vh !important;
+        padding-bottom: 40px;
+    }
+</style>
+
+@code {
+    RegisterBO model = new RegisterBO();
+    ResendLinkBO resendModel = new();
+    string domainName = "";
+    AlertBO? alert;
+    bool showForm = true;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        alert = new AlertBO();
+    }
+
+    async Task RegisterCompany()
+    {
+        try
+        {
+            _loading.Start();
+            var response = await _authProvider.Register(model);
+
+            if (response.IsSuccess)
+            {
+                alert.Type = "success";
+                model = new RegisterBO();
+                showForm = false;
+            }
+            else
+            {
+                alert.Type = "warning";
+            }
+            alert.Message = response.Message;
+            alert.Visible = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            _loading.Stop();
+        }
+
+    }
+
+    async Task ResendVerificationLink()
+    {
+        _loading.Start();
+        var response = await _authProvider.ResendVerificationToken(resendModel.Email);
+        if (response.IsSuccess)
+        {
+            alert.Message = response.Message;
+            alert.Type = "success";
+            alert.Visible = true;
+        }
+        _loading.Stop();
+    }
+}

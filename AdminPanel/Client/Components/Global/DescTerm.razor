@@ -1,0 +1,15 @@
+﻿<dt class="col-sm-@LabelColumns">@Label</dt>
+<dd class="col-sm-@(12 - LabelColumns)">
+    @ChildContent
+</dd>
+
+@code {
+    [Parameter]
+    public string Label { get; set; }
+
+    [Parameter]
+    public int LabelColumns { get; set; } = 5;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+}

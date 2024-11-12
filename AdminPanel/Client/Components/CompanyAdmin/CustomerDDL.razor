@@ -1,0 +1,70 @@
+﻿
+<RadzenDropDown Value="Value" TValue="long?" Data="@allCustomers" TextProperty="Description" ValueProperty="IdLong"
+                AllowClear="true" AllowFiltering="true" Placeholder="@selectedCustomerName"
+                AllowVirtualization="true" Count="@totalCustCount" LoadData="@LoadCustomersVirtualization"
+                class="@(showError ? "form-control invalid" : "form-control")" ValueChanged="@((val) => OnValueChanged(val))" />
+
+
+@code {
+    [Parameter]
+    public long? Value { get; set; }
+
+    [Parameter]
+    public EventCallback<long?> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<long?> OnChange { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> HasError { get; set; }
+
+    [Parameter]
+    public string Selected { get; set; }
+
+    IEnumerable<CommonDropdownBO> allCustomers;
+    int totalCustCount = 0;
+    string selectedCustomerName = "";
+    bool showError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        selectedCustomerName = Selected;
+    }
+
+    async Task GetAllCustomers(string query = "")
+    {
+        allCustomers = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/GetAllCustomers?companyId={_state.CompanyId}&{query}");
+        if (allCustomers.Count() > 0)
+        {
+            totalCustCount = allCustomers.ToList()[0].TotalRecords;
+        }
+    }
+
+    async Task LoadCustomersVirtualization(LoadDataArgs args)
+    {
+        await GetAllCustomers($"pageNumber={args.Skip.Value}&pageSize={args.Top.Value}&searchString={args.Filter}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void OnValueChanged(object value)
+    {
+        if (value == null)
+        {
+            selectedCustomerName = "";
+            Value = null;
+            showError = true;
+            await HasError.InvokeAsync(true);
+        }
+        else
+        {
+            showError = false;
+            await HasError.InvokeAsync(false);
+            Value = (long?)value;
+            selectedCustomerName = allCustomers.FirstOrDefault(x => x.IdLong == Value).Description;
+        }
+        await OnChange.InvokeAsync(Value);
+        await ValueChanged.InvokeAsync(Value);
+        await InvokeAsync(StateHasChanged);
+    }
+}

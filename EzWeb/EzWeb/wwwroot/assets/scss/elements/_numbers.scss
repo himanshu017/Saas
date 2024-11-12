@@ -1,0 +1,21 @@
+
+
+
+/* --------------- numbers style-6 --------------- */
+.number-card.style-6{
+    border-right: 1px solid #9993;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    h2{
+        font-size: 45px;
+        color: var(--color-blue6);
+    }
+    .text{
+        font-size: 15px;
+        color: #000;
+        line-height: 1.5;
+        text-transform: capitalize;
+    }
+}
+

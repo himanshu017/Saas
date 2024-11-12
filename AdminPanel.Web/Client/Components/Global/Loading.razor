@@ -1,0 +1,38 @@
+﻿@inject DialogService DialogService
+@inject LoadingService loading
+@implements IDisposable
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        loading.OnShow += Show;
+        loading.OnHide += Hide;
+    }
+
+    public void Show()
+    {
+        DialogService.Open("", ds =>
+        @<div>
+            <div class="row">
+                <div class="col text-center p-3">
+                    <RadzenImage Path="theme/images/ez-logo-dark.svg" Style="display: block; width: 200px; margin-bottom: 20px;" />
+                    <b>Loading, please wait...</b>
+                </div>
+            </div>
+    </div>
+    , new DialogOptions() { ShowTitle = false, Style = "min-height:auto;min-width:auto;width:auto" });
+    }
+
+    public void Hide()
+    {
+        DialogService.Close();
+    }
+
+    public void Dispose()
+    {
+        loading.OnShow -= Show;
+        loading.OnHide -= Hide;
+    }
+
+}

@@ -1,0 +1,86 @@
+﻿@page "/GlobalCompanyTexts"
+
+<PageHeader Title="Global Texts" />
+<Loading @ref="loading" />
+<div class="row">
+    <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
+        <Tabs>
+            <RadzenTabsItem Text="Notice Board">
+                <RadzenHtmlEditor @bind-Value="@model.NoticeBoard" class="editor" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Terms & Conditions">
+                <RadzenHtmlEditor @bind-Value="@model.TermsConditions" class="editor" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Liquor Control Warning">
+                <RadzenHtmlEditor @bind-Value="@model.LiquorControl" class="editor" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Non-Food Warning">
+                <RadzenHtmlEditor @bind-Value="@model.NonFood" class="editor" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Invoice Footer">
+                <RadzenHtmlEditor @bind-Value="@model.InvoiceFooter" class="editor" />
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+    <div class="col-md-3 mt-3">
+        <RadzenButton Text="Save Changes" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@AddUpdate" />
+    </div>
+</div>
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    CompanyGlobalTextBO model = new();
+    Loading loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetTexts();
+    }
+
+    async Task GetTexts()
+    {
+        loading.ShowLoading();
+
+        model = await _http.GetAllRecords<CompanyGlobalTextBO?>($"/common/GetCompanyGlobaltexts?companyId={_state.CompanyId}");
+
+        if (model != null)
+            model.IsUpdate = model.CompanyId > 0 ? true : false;
+
+        loading.StopLoading();
+    }
+
+    async Task AddUpdate()
+    {
+        loading.ShowLoading();
+        if (model.IsUpdate)
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+
+        model.CompanyId = _state.CompanyId;
+        var res = await _http.PostRequest<BaseResponseBO>("/common/AddUpdateCompanyGlobaltexts", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+        loading.StopLoading();
+    }
+}

@@ -1,0 +1,161 @@
+﻿
+<RadzenButton Icon="add_circle_outline" Text="Add" class="mb-2" Click="@(() => grid.InsertRow(new CustomerUserBO()))" />
+<RadzenDataGrid TItem="CustomerUserBO" @ref="grid" Data="@AllUsers" RowUpdate="@AddEdit" RowCreate="@AddEdit"
+                EditMode="DataGridEditMode.Single">
+    <Columns>
+        <RadzenDataGridColumn TItem="CustomerUserBO" Property="FirstName" Title="First Name">
+            <Template Context="row">
+                <span>@row.FirstName</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.FirstName" class="form-control" MaxLength="100" Name="FirstName" />
+                <RadzenRequiredValidator Component="FirstName" Text="First Name is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="CustomerUserBO" Property="LastName" Title="Last Name">
+            <Template Context="row">
+                <span>@row.LastName</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.LastName" class="form-control" MaxLength="100" Name="LastName" />
+                <RadzenRequiredValidator Component="LastName" Text="Last Name is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="CustomerUserBO" Property="Email" Title="Email">
+            <Template Context="row">
+                <span>@row.Email</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.Email" class="form-control" MaxLength="100" Name="Email" />
+                <RadzenRequiredValidator Component="Email" Text="Email is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="CustomerUserBO" Property="Phone" Title="Phone">
+            <Template Context="row">
+                <span>@row.Phone</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.Phone" class="form-control" MaxLength="100" Name="Phone" />
+                <RadzenRequiredValidator Component="Phone" Text="Phone is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="CustomerUserBO" Property="Password" Title="Password">
+            <Template Context="row">
+                <a href="javascript:;" @onclick="@(() => OpenResetModal(row.UserId))">Reset Password</a>
+            </Template>
+            <EditTemplate Context="row">
+                @if (row.UserId == 0)
+                {
+                    <RadzenPassword @bind-Value="row.Password" class="form-control" MaxLength="100" Name="Password" />
+                    <RadzenRequiredValidator Component="Password" Text="Password is required" Popup="true" Style="position: fixed" />
+                }
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <GridControls TItem="CustomerUserBO" Grid="grid" Width="120px" DeleteRow="@DeleteCustomerUser" AllowDeleteIf=@((row) => AllowDeleteIf(row)) />
+    </Columns>
+</RadzenDataGrid>
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 4000 };
+    RadzenDataGrid<CustomerUserBO> grid;
+
+    [Parameter]
+    public long CustomerId { get; set; }
+
+    [Parameter]
+    public EventCallback ResetUsers { get; set; }
+
+    [Parameter]
+    public IEnumerable<CustomerUserBO> AllUsers { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    public bool AllowDeleteIf(CustomerUserBO row) => AllUsers.Count() > 1;
+
+    async Task AddEdit(CustomerUserBO row)
+    {
+        if (row.UserId == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+
+        row.CustomerId = CustomerId;
+        row.CompanyId = _state.CompanyId;
+        row.IsActive = true;
+        row.IsEmailVerified = true;
+        var response = await _http.PostRequest<BaseResponseBO>("/Customer/AddEditCustomerUser", row);
+
+        if (response.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = response.Message;
+            await ResetUsers.InvokeAsync();
+            await grid.Reload();
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = response.Message;
+        }
+        _notify.Notify(notification);
+    }
+
+    async Task OpenResetModal(long userId)
+    {
+        var response = await _dialog.OpenAsync<ResetUserPassword>($"Reset Password",
+                 new Dictionary<string, object>() { { "UserId", userId } },
+                 new DialogOptions()
+                     {
+                         Width = "35%",
+                         Height = "350px"
+                     });
+
+        if (response != null && response.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = "Password has been reset.";
+            _notify.Notify(notification);
+        }
+    }
+
+    async Task DeleteCustomerUser(CustomerUserBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete {row.FirstName} {row.LastName}",
+                     new ConfirmOptions()
+                         {
+                             OkButtonText = "Yes",
+                             CancelButtonText = "No"
+                         });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/Customer/DeleteCustomerUser", row.UserId);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                notification.Summary = response.Message;
+                await ResetUsers.InvokeAsync();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+                notification.Summary = response.Message;
+            }
+            _notify.Notify(notification);
+        }
+    }
+}

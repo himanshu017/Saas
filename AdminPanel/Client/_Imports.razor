@@ -1,0 +1,30 @@
+﻿@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using Microsoft.JSInterop
+@using AdminPanel.Client
+@using AdminPanel.Client.Shared
+@using AdminPanel.Client.Pages.Account
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+@using AdminPanel.Shared
+@using AdminPanel.Shared.BO
+@using AdminPanel.Client.Components.Global
+@using AdminPanel.Client.Components.CompanyAdmin
+@using AdminPanel.Client.Services
+
+@using Newtonsoft.Json
+@using AdminPanel.Shared.BO.CompanyAdmin
+@using Microsoft.AspNetCore.WebUtilities
+@using AdminPanel.Client.Extensions
+
+
+// common services to use across the app
+@inject INotify _notifyS
+@inject LoadingService _loading

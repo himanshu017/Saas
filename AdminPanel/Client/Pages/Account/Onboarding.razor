@@ -1,0 +1,110 @@
+﻿@page "/CompanyOnboarding"
+@inject CustomAuthenticationStateProvider _authProvider
+
+<div class="card-body p-5 py-3">
+    <AlertMessage AlertModel="@alert" />
+    <RadzenSteps>
+        <Steps>
+            <RadzenStepsItem Text="Basic Info">
+                <EditForm Model="@model" class="needs-validation" novalidate="" autocomplete="off" OnValidSubmit="@RegisterCompany">
+                    <DataAnnotationsValidator />
+                    <div class="form-floating mb-3">
+                        <RadzenTextBox @bind-Value="@model.FirstName" class="form-control" MaxLength="100" Placeholder="First Name" />
+                        <label class="mb-2 text-muted" for="FirstName">First Name</label>
+                        <ValidationMessage For="() => model.FirstName" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <RadzenTextBox @bind-Value="@model.LastName" class="form-control" MaxLength="100" Placeholder="Last Name" />
+                        <label class="mb-2 text-muted" for="name">Last Name</label>
+                        <ValidationMessage For="() => model.LastName" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <RadzenTextBox @bind-Value="@model.CompanyName" class="form-control" MaxLength="100" Placeholder="Company Name" />
+                        <label class="mb-2 text-muted" for="name">Company Name</label>
+                        <ValidationMessage For="() => model.CompanyName" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <RadzenTextBox @bind-Value="@model.Email" class="form-control" MaxLength="100" Placeholder="E-Mail Address" />
+                        <label class="mb-2 text-muted" for="email">E-Mail Address</label>
+                        <ValidationMessage For="() => model.Email" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <RadzenPassword @bind-Value="@model.Password" class="form-control" MaxLength="20" Placeholder="Password" />
+                        <label class="mb-2 text-muted" for="password">Password</label>
+                        <ValidationMessage For="() => model.Password" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <RadzenTextBox @bind-Value="@model.DomainName" class="form-control"
+                                       MaxLength="15"
+                                       @oninput=@(args => domainName = args.Value.ToString().Trim())
+                                       Placeholder="Domain Name" />
+
+                        <label class="mb-2 text-muted" for="name">Domain Name</label>
+
+                        <ValidationMessage For="() => model.DomainName" />
+                        @if (!string.IsNullOrEmpty(domainName))
+                        {
+                            <div class="form-text">https://@(domainName).ezorders.us</div>
+                        }
+                    </div>
+                    <p class="form-text text-muted mb-3">
+                        By registering you agree with our <a href="javascript:;">Terms of Service & Privacy Policy</a>.
+                    </p>
+
+                    <div class="align-items-center d-flex">
+                        <RadzenButton Text="Register" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Submit" class="ms-auto" />
+                    </div>
+                </EditForm>
+            </RadzenStepsItem>
+            <RadzenStepsItem Text="Company Settings">
+
+            </RadzenStepsItem>
+            <RadzenStepsItem Text="Make Payment">
+
+            </RadzenStepsItem>
+        </Steps>
+    </RadzenSteps>
+</div>
+
+@code {
+    RegisterBO model = new RegisterBO();
+    ResendLinkBO resendModel = new();
+    string domainName = "";
+    AlertBO? alert;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(12);
+        
+    }
+    async Task RegisterCompany()
+    {
+        try
+        {
+            _loading.Start();
+            var response = await _authProvider.Register(model);
+
+            if (response.IsSuccess)
+            {
+                alert.Type = "success";
+                model = new RegisterBO();
+            }
+            else
+            {
+                alert.Type = "warning";
+            }
+            alert.Message = response.Message;
+            alert.Visible = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            _loading.Stop();
+        }
+    }
+
+}

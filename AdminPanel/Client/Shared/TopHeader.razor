@@ -1,0 +1,94 @@
+﻿@using AdminPanel.Client.AuthProviders
+@using AdminPanel.Shared.BO.MasterAdmin
+@inject CustomAuthenticationStateProvider _authProvider
+@inject NavigationManager _navManager
+@inject IStateService _state
+@inject HttpClient _httpClient
+
+<AuthorizeView>
+    <Authorized>
+        <div class="top-row px-4">
+            <div class="col-6 float-start">
+                @if (context.User.IsInRole("SuperAdmin") && _state.InCompanySection)
+                {
+                    <div>
+                        <RadzenDropDown @bind-Value="@companyId" Data="@allCompanies" ValueProperty="CompanyId" TextProperty="DropDownText"
+                                    Placeholder="Choose company" AllowClear="true" class="w-100" Change="SetCompanyId" />
+                    </div>
+                }
+            </div>
+            <div class="col-6 float-end text-end">
+                <span class="navbar-text mx-2">
+                    @_state.FullName
+                </span>
+                <RadzenProfileMenu Click="SetStatevals">
+                    <Template>
+                        <RadzenGravatar Email="user@example.com">
+                        </RadzenGravatar>
+                    </Template>
+                    <ChildContent>
+                        @if (context.User.IsInRole("SuperAdmin"))
+                        {
+                            <RadzenProfileMenuItem Text="Master Admin" Path="AdminDashboard" Icon="settings" Value="M"></RadzenProfileMenuItem>
+                            <RadzenProfileMenuItem Text="Company Admin" Path="Dashboard" Icon="settings" Value="C"></RadzenProfileMenuItem>
+                        }
+                        @if (context.User.IsInRole("CompanyAdmin"))
+                        {
+                            <RadzenProfileMenuItem Text="Account Settings" Path="AccountSettings" Icon="settings"></RadzenProfileMenuItem>
+                        }
+                        <li class="rz-navigation-item">
+                            <div class="rz-navigation-item-wrapper">
+                                <a href="javascript:;" class="rz-navigation-item-link" @onclick="@Logout">
+                                    <i class="rzi rz-navigation-item-icon"><!--!-->announcement</i>
+                                    <span class="rz-navigation-item-text">Logout</span>
+                                </a>
+                            </div>
+                        </li>
+                    </ChildContent>
+                </RadzenProfileMenu>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    IEnumerable<CompanyModelBO> allCompanies;
+    long companyId;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllCompanies();
+    }
+
+    async Task Logout()
+    {
+        await _authProvider.Logout();
+        _navManager.NavigateTo("/Login");
+    }
+
+    async Task GetAllCompanies()
+    {
+        allCompanies = await _httpClient.GetFromJsonAsync<IEnumerable<CompanyModelBO>>($"Company/GetAllCompanies");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void SetCompanyId()
+    {
+        _state.CompanyId = companyId;
+        _state.SetCompanyForSuperAdmin(companyId);
+        StateHasChanged();
+    }
+
+    void SetStatevals(RadzenProfileMenuItem args)
+    {
+        if(args.Value == "C")
+        {
+            _state.InCompanySection = true;
+        }
+        else if(args.Value == "M")
+        {
+            _state.InCompanySection = false;
+        }
+        StateHasChanged();
+    }
+}

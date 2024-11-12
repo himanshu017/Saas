@@ -1,0 +1,179 @@
+﻿@using Newtonsoft.Json;
+@foreach (var attr in Prod.ProductAttrMappings)
+{
+    <div class="details-list-group">
+        <label class="details-list-title">@attr.AttributeName:</label>
+        @if (attr.DisplayControlTypeId == (int)AttrDisplayControlType.ColorSquares)
+        {
+            <div class="d-block">
+                <ul class="details-tag-list justify-content-start">
+                    @foreach (var val in attr.AttrValues)
+                    {
+                        <li>
+                            <div class="color-square @(selectedAttributeValues.ContainsValue(val.Id) ? "cq-selected" : "")"
+                                 style="@($"background-color:{@val.ColorRgb};opacity:{(val.IsActive == true ? "1" : ".3")}")"
+                            @onclick="@(value => OnAttributeSelectionChanged(attr.Id, val.Id, val.IsActive))">
+                            </div>
+                        </li>
+                    }
+                </ul>
+                @if (selectedAttributeValues.All(x => requiredAttributes.Contains(attr.Id)) && !selectedAttributeValues.ContainsKey(attr.Id))
+                {
+                    <span class="text-danger">This attribute is required </span>
+                }
+            </div>
+        }
+
+        @if (attr.DisplayControlTypeId == (int)AttrDisplayControlType.SelectionTiles)
+        {
+            <div class="d-block">
+                <RadzenSelectBar TValue="int" Value="@selectedAttributeValues.GetValueOrDefault(attr.Id, 0)"
+                                 ValueChanged="@(value => OnAttributeSelectionChanged(attr.Id, value))">
+                    <Items>
+                        @foreach (var val in attr.AttrValues)
+                        {
+                            <RadzenSelectBarItem Text="@val.Value" Value="@val.Id"
+                                                 Disabled="@(val.IsActive.HasValue && val.IsActive == true ? false : true)" />
+                        }
+                    </Items>
+                </RadzenSelectBar>
+
+                @if (selectedAttributeValues.All(x => requiredAttributes.Contains(attr.Id)) && !selectedAttributeValues.ContainsKey(attr.Id))
+                {
+                    <span class="text-danger d-block">This attribute is required </span>
+                }
+            </div>
+        }
+
+        @if (attr.DisplayControlTypeId == (int)AttrDisplayControlType.RadioButtonList)
+        {
+            <div class="d-block">
+                <RadzenRadioButtonList Data="attr.AttrValues" TValue="int" TextProperty="Value" ValueProperty="Id"
+                                       Value="@selectedAttributeValues.GetValueOrDefault(attr.Id, 0)"
+                                       ValueChanged="@(value => OnAttributeSelectionChanged(attr.Id, value))" DisabledProperty="IsDisabled" />
+
+                @if (selectedAttributeValues.All(x => requiredAttributes.Contains(attr.Id)) && !selectedAttributeValues.ContainsKey(attr.Id))
+                {
+                    <span class="text-danger d-block">This attribute is required </span>
+                }
+            </div>
+        }
+
+        @if (attr.DisplayControlTypeId == (int)AttrDisplayControlType.DropDownList)
+        {
+            <div class="d-block">
+                <RadzenDropDown Placeholder="@attr.Placeholder" Data="@attr.AttrValues" TValue="int" TextProperty="Value" ValueProperty="Id"
+                                Value="@selectedAttributeValues.GetValueOrDefault(attr.Id, 0)"
+                                ValueChanged="@(value => OnAttributeSelectionChanged(attr.Id, value))" DisabledProperty="IsDisabled" />
+
+                @if (selectedAttributeValues.All(x => requiredAttributes.Contains(attr.Id)) && !selectedAttributeValues.ContainsKey(attr.Id))
+                {
+                    <span class="text-danger d-block">This attribute is required </span>
+                }
+            </div>
+        }
+    </div>
+}
+@code {
+    [Parameter]
+    public ProductListBO? Prod { get; set; }
+
+    [Parameter]
+    public EventCallback<AttrEventcallbackBO> OnSelectionChange { get; set; }
+
+    int value = 0;
+    private Dictionary<int, int> selectedAttributeValues = new Dictionary<int, int>();
+    private List<int> requiredAttributes = new List<int>();
+
+    decimal? priceAdjustment = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+
+        if (!string.IsNullOrEmpty(Prod.AttributeMappingJson))
+        {
+            var existingAttrs = JsonConvert.DeserializeObject<Dictionary<int, int>>(Prod.AttributeMappingJson);
+
+            foreach (var item in existingAttrs)
+            {
+                await OnAttributeSelectionChanged(item.Key, item.Value);
+            }
+        }
+        else
+        {
+            await DisplayPreSelectedValues();
+        }
+    }
+
+    async Task DisplayPreSelectedValues()
+    {
+        // add the required attr values in a dictionary
+        requiredAttributes = Prod.ProductAttrMappings.Where(x => x.IsRequired == true)
+                                              .Select(s => s.Id).ToList();
+
+        foreach (var attr in Prod.ProductAttrMappings)
+        {
+            if (attr.AttrValues.Count(x => x.IsPreSelected == true) > 0)
+            {
+                var val = attr.AttrValues.FirstOrDefault(x => x.IsPreSelected == true);
+                await OnAttributeSelectionChanged(attr.Id, val.Id);
+                priceAdjustment += val.PriceAdjustment;
+                continue;
+            }
+        }
+    }
+
+    async Task OnAttributeSelectionChanged(int attributeId, int selectedValue, bool? isActive = true)
+    {
+        if (isActive == false)
+        {
+            return;
+        }
+
+        if (selectedAttributeValues.ContainsKey(attributeId))
+        {
+            selectedAttributeValues[attributeId] = selectedValue;
+        }
+        else
+        {
+            selectedAttributeValues.Add(attributeId, selectedValue);
+        }
+
+        RecalculatePriceAdjustment();
+
+        await OnSelectionChange.InvokeAsync(new AttrEventcallbackBO()
+            {
+                PriceAdjustment = priceAdjustment,
+                SelectedAttributes = selectedAttributeValues,
+                RequiredAttributes = requiredAttributes
+            });
+    }
+
+    void RecalculatePriceAdjustment()
+    {
+        priceAdjustment = 0;
+        foreach (var item in selectedAttributeValues)
+        {
+            var record = Prod.ProductAttrMappings.FirstOrDefault(x => x.Id == item.Key).AttrValues.FirstOrDefault(av => av.Id == item.Value);
+
+            var price = (record.UsePercentage ?? false) ? (Prod.Price * (record.PriceAdjustment / 100)) : record.PriceAdjustment;
+            priceAdjustment += price;
+        }
+    }
+}
+
+<style>
+    /* Style for color squares */
+    .color-square {
+        width: 25px;
+        height: 25px;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .cq-selected {
+        border: 4px solid #55a0d6;
+    }
+</style>

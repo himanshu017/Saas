@@ -1,0 +1,77 @@
+﻿@implements IDisposable
+
+@if (products == null || products.Count() == 0)
+{
+    return;
+}
+<!--=====================================
+            FEATURED PART START
+=======================================-->
+<section class="section feature-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="section-heading">
+                    <h2>our featured items</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row row-cols-1 row-cols-md-1 row-cols-lg-2 row-cols-xl-2">
+
+            @if (products != null && products.Count() > 0)
+            {
+                foreach (var prod in products)
+                {
+                    <ProductDisplay Prod="prod" IsFeature="true" />
+                }
+            }
+
+        </div>
+        @*<div class="row">
+        <div class="col-lg-12">
+        <div class="section-btn-25">
+        <a href="shop-4column.html" class="btn btn-outline">
+        <i class="fas fa-eye"></i>
+        <span>show more</span>
+        </a>
+        </div>
+        </div>
+        </div> *@
+    </div>
+</section>
+<!--=====================================
+            FEATURE PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<ProductListBO> products;
+    GetProductModel model = new GetProductModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+
+        await GetFeaturedProducts();
+    }
+
+    async Task GetFeaturedProducts()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 10;
+        model.PageNumber = 0;
+        var response = await _http.PostRequest<GenericResponse<IEnumerable<ProductListBO>>>($"api/Home/GetFeaturedProducts", model, cts);
+
+        if (response.IsSuccess)
+        {
+            products = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

@@ -1,0 +1,247 @@
+﻿
+<RadzenTemplateForm TItem="CustomerBO" Data=@Model Submit="@AddCustomer">
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Customer Name" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.CustomerName" MaxLength="100" class="form-control" Name="CName" />
+            <RadzenRequiredValidator Component="CName" Text="Customer name is required" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Alpha Code" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.AlphaCode" MaxLength="20" class="form-control" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="First Name" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.FirstName" MaxLength="100" class="form-control" Name="FName" />
+            <RadzenRequiredValidator Component="FName" Text="First name is required" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Last Name" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.LastName" MaxLength="100" class="form-control" Name="LName" />
+            <RadzenRequiredValidator Component="LName" Text="Last name is required" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Registration No." />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.RegistrationNo" MaxLength="100" class="form-control" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Email" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.Email" MaxLength="100" class="form-control" Name="Email" />
+            <RadzenRequiredValidator Component="Email" Text="Email is required" />
+            <RadzenEmailValidator Component="Email" Text="Provide a valid email address" />
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Phone1" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.Phone1" MaxLength="13" class="form-control" Name="Phone" />
+            <RadzenRequiredValidator Component="Phone" Text="Phone is required" />
+            <RadzenRegexValidator Component="Phone" Text="Enter a valid phone no." Pattern="^[0-9]*$" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Fax" />
+        </div>
+        <div class="col-md-3">
+            <RadzenTextBox @bind-Value="Model.Fax" MaxLength="13" class="form-control" Name="Fax" />
+            <RadzenRegexValidator Component="Fax" Text="Enter a valid fax" Pattern="^[0-9]*$" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Salesman Code" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown AllowClear="true" TValue="string" Class="form-control"
+                            Data="@salesrepCodes" @bind-Value="Model.SalesmanCode" />
+            @*<RadzenTextBox @bind-Value="Model.SalesmanCode" MaxLength="15" class="form-control" />*@
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Delivery Runs" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown AllowClear="true" Class="form-control" Multiple="true"
+                            Data="@allRuns" @bind-Value="@Model.CustomerRuns" TextProperty="RunNo" ValueProperty="Id" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Special Permitted Days" />
+        </div>
+        <div class="col-md-3 d-tbl">
+            <div class="tbl-cell">
+                <RadzenSwitch @bind-Value="@Model.HasSpecialPermittedDays" />
+            </div>
+        </div>
+        <div class="col-md-6 mt-2">
+            <RadzenCheckBoxList Visible="@(Model.HasSpecialPermittedDays)" @bind-Value=@selectedValues
+                                TValue="string" Data="@StaticHelpers.DayNames" TextProperty="Value" ValueProperty="Key" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Has Special Category" />
+        </div>
+        <div class="col-md-3 d-tbl">
+            <div class="tbl-cell">
+                <RadzenSwitch @bind-Value="@Model.IsSpecialCategory" />
+            </div>
+        </div>
+        <div class="col-md-6 mt-2">
+            <RadzenListBox Visible="@(Model.IsSpecialCategory)" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                           @bind-Value=@Model.SpecialCategories Multiple="true" Data=@allSpecialCategories
+                           TextProperty="CategoryName" ValueProperty="Id" Placeholder="Search category..."
+                           Style="height:200px" Class="w-100" />
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Is Parent" />
+        </div>
+        <div class="col-md-3 d-tbl">
+            <div class="tbl-cell">
+                <RadzenSwitch @bind-Value="@Model.IsParent" />
+            </div>
+        </div>
+        <div class="col-md-6 mt-2">
+            @if (Model.IsParent)
+            {
+                <RadzenButton Text="Choose Child Customers" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(true))" />
+                <span>@selected</span>
+            }
+            @*<RadzenListBox Visible="@(Model.IsParent)" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+            @bind-Value=@Model.ChildCustomerIds Multiple="true" Data=@Customers
+            TextProperty="CustomerName" ValueProperty="CustomerId" Placeholder="Search customer..."
+            Style="height:200px" Class="w-100" />*@
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-lg-6">
+            <RadzenButton class="w-100" Text='@(Model.CustomerId == 0 ? "Save Customer":"Update Customer")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+        </div>
+        <div class="col-lg-6">
+            <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" Click="@(() => _dialog.Close())" ButtonStyle="ButtonStyle.Secondary" />
+        </div>
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    [Parameter]
+    public CustomerBO Model { get; set; }
+
+    [Parameter]
+    public IEnumerable<CustomerBO> Customers { get; set; }
+
+    IEnumerable<string> selectedValues;
+    IEnumerable<CategoriesBO> allSpecialCategories;
+    IEnumerable<long> selectedCategories;
+    //IEnumerable<long> selectedCustomers;
+    IEnumerable<string> salesrepCodes;
+    IEnumerable<DeliveryRunBO> allRuns;
+
+    string selected => Model.ChildCustomerIds?.Count() > 0 ? $"{Model.ChildCustomerIds.Count()} Selected" : "0 Selected";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllSalesrepCode();
+        await GetAllRuns();
+        if (!string.IsNullOrEmpty(Model.PermittedDays))
+        {
+            selectedValues = Model.PermittedDays.Split(',');
+        }
+
+        if (Model.IsSpecialCategory)
+        {
+            Model.SpecialCategories = Model.CustomerCategories.Select(s => s.Id).ToList();
+        }
+
+        if (Model.IsParent)
+        {
+            Model.ChildCustomerIds = Model.ChildCustomerRecords.Select(s => s.CustomerId).ToList();
+        }
+
+        await GetAllSpecialCategories();
+    }
+
+    async Task GetAllSpecialCategories()
+    {
+        allSpecialCategories = await _http.GetAllRecords<IEnumerable<CategoriesBO>>($"Categories/GetAllSpecialCategories?cid={_state.CompanyId}");
+    }
+
+    async Task AddCustomer()
+    {
+        Model.CreatedBy = _state.UserId;
+        Model.CreatedOn = DateTime.UtcNow;
+        Model.CompanyId = _state.CompanyId;
+
+        if (Model.HasSpecialPermittedDays)
+        {
+            Model.PermittedDays = string.Join(',', selectedValues);
+        }
+        else
+        {
+            Model.PermittedDays = "";
+        }
+
+        var res = await _http.PostRequest<BaseResponseBO>("/customer/AddEditCustomer", Model);
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            _dialog.Close(res);
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+    }
+
+    async Task GetAllSalesrepCode()
+    {
+        salesrepCodes = await _http.GetAllRecords<IEnumerable<string>>($"/customer/GetAllSalesrepCode?companyId={_state.CompanyId}");
+    }
+
+    async Task GetAllRuns()
+    {
+        allRuns = await _http.GetAllRecords<IEnumerable<DeliveryRunBO>>($"/common/GetDeliveryRuns?companyId={_state.CompanyId}");
+    }
+
+    async Task ShowMultiSelect(bool isCustomer)
+    {
+        var res = await _dialog.OpenAsync<MultiSelection>(isCustomer ? "Select Customers" : "Select Products",
+               new Dictionary<string, object>() { { "IsCustomer", isCustomer },
+                                                  { "PreviousSelection", Model.ChildCustomerIds },
+                                                  { "Excluded", Model.CustomerId }},
+           new DialogOptions()
+               {
+                   Width = "65%"
+               });
+
+        if (res != null)
+        {
+            Model.ChildCustomerIds = res;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+}

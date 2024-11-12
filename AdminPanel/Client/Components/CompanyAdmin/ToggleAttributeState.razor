@@ -1,0 +1,45 @@
+﻿@inject HttpClient _http
+
+@if (IsActive ?? false)
+{
+    <RadzenButton Size="ButtonSize.ExtraSmall" Text="Disable" ButtonStyle="ButtonStyle.Danger" Click="@(() => ToggleState(false))" />
+}
+else
+{
+    <RadzenButton Size="ButtonSize.ExtraSmall" Text="Enable" ButtonStyle="ButtonStyle.Success" Click="@(() => ToggleState(true))" />
+}
+
+@code {
+    [Parameter]
+    public bool? IsActive { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+
+    [Parameter]
+    public ToggleAttrType Type { get; set; }
+
+    [Parameter]
+    public EventCallback<BaseResponseBO> OnUpdate { get; set; }
+
+    async Task ToggleState(bool value)
+    {
+        var toggleBO = new ToggleAttrBO()
+            {
+                Id = Id,
+                Type = Type,
+                Value = value
+            };
+
+        var requset = await _http.PostAsJsonAsync("Attribute/ToggleAttrState", toggleBO);
+
+        if (requset.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(requset.Content.ReadAsStringAsync().Result);
+
+            await OnUpdate.InvokeAsync(response);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,701 @@
+﻿@page
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@model EzWeb.Pages.IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<header class="section-padding style-1">
+        <div class="container">
+            <div class="content">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="info">
+                            <div class="section-head mb-60">
+                                <h6 class="color-main text-uppercase">EZ Web agency</h6>
+                                <h2>
+                                    Technology & IT <span class="fw-normal">Solutions</span>
+                                </h2>
+                            </div>
+                            <div class="text">
+                                We transform businesses of most major sectors with powerful and adaptable digital solutions that satisfy the needs of today.
+                            </div>
+                            <div class="bttns mt-5">
+                                <a href="page-services-5.html" class="btn btn-dark">
+                                    <span>our services</span>
+                                </a>
+                                <a href="https://youtu.be/pGbIOC83-So?t=21" data-lity class="vid-btn">
+                                    <i class="bi bi-play wow heartBeat infinite slow"></i>
+                                    <span>
+                                        EZ Web’s <br> Showreels
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 offset-lg-1">
+                        <div class="img">
+                            <img src="assets/img/header/head.png" alt="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <img src="assets/img/header/head_shape_r.png" alt="" class="head-shape-r wow">
+        <img src="assets/img/header/head_shape_l.png" alt="" class="head-shape-l wow">
+    </header>
+    <!-- ====== start about ====== -->
+    @* <section class="about style-1">
+        <div class="container">
+            <div class="content">
+                <div class="about-logos d-flex align-items-center justify-content-between border-bottom border-1 brd-light pb-20">
+                    <a href="#" class="logo wow fadeInUp" data-wow-delay="0">
+                        <img src="assets/img/about/about_logos/1.png" alt="">
+                    </a>
+                    <a href="#" class="logo wow fadeInUp" data-wow-delay="0.2s">
+                        <img src="assets/img/about/about_logos/2.png" alt="">
+                    </a>
+                    <a href="#" class="logo wow fadeInUp" data-wow-delay="0.4s">
+                        <img src="assets/img/about/about_logos/3.png" alt="">
+                    </a>
+                    <a href="#" class="logo wow fadeInUp" data-wow-delay="0.6s">
+                        <img src="assets/img/about/about_logos/4.png" alt="">
+                    </a>
+                    <a href="#" class="logo wow fadeInUp" data-wow-delay="0.8s">
+                        <img src="assets/img/about/about_logos/5.png" alt="">
+                    </a>
+                </div>
+                <div class="about-info">
+                    <div class="row justify-content-between">
+                        <div class="col-lg-5">
+                            <div class="title">
+                                <h3 class=" wow fadeInUp slow">“Technology is best when it brings people  together.”</h3>
+                                <small class=" wow fadeInUp slow fw-bold">Patricia Cross</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="info">
+                                <h6 class=" wow fadeInUp slow">We can help to maintain and modernize your IT infrastructure  & solve various infrastructure-specific issues a business may face.</h6>
+                                <p class=" wow fadeInUp slow">EZ Web Co is the partner of choice for many of the world’s leading  enterprises, SMEs and technology challengers. We help businesses  elevate their value through custom software development, product  design, QA and consultancy services.</p>    
+                                <a href="page-about-5.html" class="btn btn-outline-light mt-5 sm-butn wow fadeInUp slow">
+                                    <span>more about us</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-numbers">
+                    <div class="row">
+                        <div class="col-lg-3">
+                            <div class="num-item wow fadeInUp" data-wow-delay="0">
+                                <div class="num">
+                                    <span class="counter">
+                                        10 
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-plus"></i>
+                                    </span>
+                                </div>
+                                <div class="inf">
+                                    Years of Experience
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="num-item wow fadeInUp" data-wow-delay="0.2s">
+                                <div class="num">
+                                    <span class="counter">
+                                        5
+                                    </span>
+                                    <span>
+                                        K
+                                    </span>
+                                </div>
+                                <div class="inf">
+                                    Projects completed
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="num-item wow fadeInUp" data-wow-delay="0.4s">
+                                <div class="num">
+                                    <span class="counter">
+                                        24
+                                    </span>
+                                </div>
+                                <div class="inf">
+                                    Awards achievied
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="num-item wow fadeInUp" data-wow-delay="0.6s">
+                                <div class="num">
+                                    <span class="counter">
+                                        180
+                                    </span>
+                                </div>
+                                <div class="inf">
+                                    Satisfied clients on 24 countries
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <img src="assets/img/about/num_shap.png" alt="" class="about_shap">
+            </div>
+        </div>
+    </section> *@
+    <!-- ====== end about ====== -->
+
+
+    <!-- ====== start services ====== -->
+    <section class="services section-padding style-1">
+        <div class="container">
+            <div class="row">
+                <div class="col offset-lg-1">
+                    <div class="section-head mb-60">
+                        <h6 class="color-main text-uppercase wow fadeInUp">our services</h6>
+                        <h2 class="wow fadeInUp">
+                            Perfect IT Solutions <span class="fw-normal">For Your Business</span>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="service-box mb-4 wow fadeInUp" data-wow-delay="0">
+                            <h5>
+                                <a href="page-services-5.html"> IT Consultation </a> 
+                                <span class="num">01</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/1.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+Our technical experts having experience more than 10+ years of experience in IT industry can provide advisory services that help clients assess different technology strategies and, in doing so, align their technology strategies with their business or process strategies
+                                </div>
+                                <div class="tags">
+                                    <a href="#">Strategy</a>
+                                    <a href="#">Consultation</a>
+                                    <a href="#">Management</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="service-box mb-4 wow fadeInUp" data-wow-delay="0.2s">
+                            <h5>
+                                <a href="page-services-5.html"> Data Security </a> 
+                                <span class="num">02</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/2.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+Data is a valuable asset that generates, acquires, saves, and exchanges for any company. We protect it from internal or external corruption and illegal access protects a company from financial loss, reputational harm, consumer trust degradation, and brand erosion.
+                                </div>
+                                <div class="tags">
+                                    <a href="#">Management</a>
+                                    <a href="#">Backup & Recovery</a>
+                                    <a href="#">Transfer</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="service-box mb-4 wow fadeInUp" data-wow-delay="0.4s">
+                            <h5>
+                                <a href="page-services-5.html"> Website Development </a> 
+                                <span class="num">03</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/3.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+We create mobile friendly and SEO friendly stunning websites for your business which can range from developing a simple single static page of plain text to complex web applications, electronic businesses, and social network services. Contact us and get a strong online presence by getting a great website from us.                                </div>
+                                <div class="tags">
+                                    <a href="#">Ecommerce</a>
+                                    <a href="#">Landing Page</a>
+                                    <a href="#">CMS</a>
+                                    <a href="#">Plugin</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="service-box mb-4 mb-md-0 wow fadeInUp" data-wow-delay="0">
+                            <h5>
+                                <a href="page-services-5.html"> UI/UX Design </a> 
+                                <span class="num">04</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/4.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+We provide a design-centric approach to user interface and user experience design, and offers practical, skill-based instruction centered around a visual communications perspective, rather than on one focused on marketing or programming alone.
+                                </div>
+                                <div class="tags">
+                                    <a href="#">Website</a>
+                                    <a href="#">Mobile App</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="service-box mb-4 mb-md-0 wow fadeInUp" data-wow-delay="0.2s">
+                            <h5>
+                                <a href="page-services-5.html"> Cloud Services </a> 
+                                <span class="num">05</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/5.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+We provide a wide range of services delivered on demand to companies and customers over the internet.
+                                </div>
+                                <div class="tags">
+                                    <a href="#">Cloud Storerage</a>
+                                    <a href="#">Hosting & VPS</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @*<div class="col-lg-4">
+                        <div class="service-box wow fadeInUp" data-wow-delay="0.4s">
+                            <h5>
+                                <a href="page-services-5.html"> Game Development </a> 
+                                <span class="num">06</span>
+                            </h5>
+                            <div class="icon">
+                                <img src="assets/img/icons/serv_icons/6.png" alt="">
+                            </div>
+                            <div class="info">
+                                <div class="text">
+We help transform games from a concept to a playable reality by coding visual elements, programming features, and testing iterations until a game is ready for market.
+                                </div>
+                                <div class="tags">
+                                    <a href="#">Unity 2D/3D</a>
+                                    <a href="#">VR/AR</a>
+                                    <a href="#">iOS & Android</a>
+                                    <a href="#">HTC Vive</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>*@
+                </div>
+            </div>
+        </div>
+        <img src="assets/img/services/ser_shap_l.png" alt="" class="ser_shap_l">
+        <img src="assets/img/services/ser_shap_r.png" alt="" class="ser_shap_r">
+    </section>
+    <!-- ====== end services ====== -->
+
+
+    <!-- ====== start choose-us====== -->
+    <section class="choose-us section-padding pt-0 style-1">
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-lg-5">
+                    <div class="info">
+                        <div class="section-head mb-60">
+                            <h6 class="color-main text-uppercase wow fadeInUp">Why choose us</h6>
+                            <h2 class="wow fadeInUp">
+                                Boost Your Business <span class="fw-normal">With New Tech</span>
+                            </h2>
+                        </div>
+                        <div class="text">
+                            Our team can assist you in transforming your business through latest tech capabilities to stay ahead of the curve.
+                        </div>
+                        <ul>
+                            <li class="wow fadeInUp">
+                                <span class="icon">
+                                    <i class="bi bi-check2"></i>
+                                </span>
+                                <h6>
+                                    Latest IT Solutions & Integration With Blockchain
+                                </h6>
+                            </li>
+                            <li class="wow fadeInUp">
+                                <span class="icon">
+                                    <i class="bi bi-check2"></i>
+                                </span>
+                                <h6>
+                                    Over 100+ Payment Gateways Support
+                                </h6>
+                            </li>
+                            <li class="wow fadeInUp">
+                                <span class="icon">
+                                    <i class="bi bi-check2"></i>
+                                </span>
+                                <h6>
+                                    AI Machine & Deep Learning
+                                </h6>
+                            </li>
+                            <li class="wow fadeInUp">
+                                <span class="icon">
+                                    <i class="bi bi-check2"></i>
+                                </span>
+                                <h6>
+                                    Dedicated Support 24/7
+                                </h6>
+                            </li>
+                        </ul>
+
+                        <a href="page-about-5.html" class="btn butn-gard border-0 text-white wow fadeInUp">
+                            <span>How We Works</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <img src="assets/img/choose_us/choose_lines.svg" alt="" class="choose-us-img">
+        <img src="assets/img/choose_us/choose_brands.png" alt="" class="choose-us-brands">        
+        <img src="assets/img/choose_us/choose_bubbles.png" alt="" class="choose-us-bubbles">        
+    </section>
+    <!-- ====== end choose-us====== -->
+
+
+    <!-- ====== start portfolio ====== -->
+    <section class="portfolio section-padding bg-gray style-1">
+        <div class="container">
+            <div class="row">
+                <div class="col offset-lg-1">
+                    <div class="section-head mb-60">
+                        <h6 class="color-main text-uppercase wow fadeInUp">Portfolio</h6>
+                        <h2 class="wow fadeInUp">
+                            Latest Projects <span class="fw-normal">From Our Team</span>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="content wow fadeIn slow">
+                <div class="portfolio-slider">
+                    <div class="swiper-container">
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide">
+                                <div class="portfolio-card">
+                                    <div class="img">
+                                        <img src="assets/img/projects/prog/1.jpeg" alt="">
+                                    </div>
+                                    <div class="info">
+                                        <h5>
+                                            <a href="page-single-project-5.html"> Infrastructure Upgrade </a> 
+                                        </h5>
+                                        <small class="d-block color-main text-uppercase"><a href="#">IT Consultation</a></small>
+                                        <div class="text">
+                                            Trust our top minds to eliminate workflow pain points, implement new tech & app.
+                                        </div>
+                                        <div class="tags">
+                                            <a href="#">Consultation</a>
+                                            <a href="#">Management</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <div class="portfolio-card">
+                                    <div class="img">
+                                        <img src="assets/img/projects/prog/2.png" alt="">
+                                    </div>
+                                    <div class="info">
+                                        <h5>
+                                            <a href="page-single-project-5.html"> Criftocy Landing Page </a> 
+                                        </h5>
+                                        <small class="d-block color-main text-uppercase"><a href="#">Website Development,</a> <a href="#">UI/UX Design</a></small>
+                                        <div class="text">
+                                            Trust our top minds to eliminate workflow pain points, implement new tech & app.
+                                        </div>
+                                        <div class="tags">
+                                            <a href="#">WordPress</a>
+                                            <a href="#">PHP</a>
+                                            <a href="#">HTML/CSS</a>
+                                            <a href="#">Figma</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <div class="portfolio-card">
+                                    <div class="img">
+                                        <img src="assets/img/projects/prog/3.jpeg" alt="">
+                                    </div>
+                                    <div class="info">
+                                        <h5>
+                                            <a href="page-single-project-5.html"> AR/VR War 1986 Game </a> 
+                                        </h5>
+                                        <small class="d-block color-main text-uppercase"><a href="#">Game Developemnt</a></small>
+                                        <div class="text">
+                                            Trust our top minds to eliminate workflow pain points, implement new tech & app.
+                                        </div>
+                                        <div class="tags">
+                                            <a href="#">VR/AR</a>
+                                            <a href="#">iOS & Android</a>
+                                            <a href="#">Unity 2D/3D</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <div class="portfolio-card">
+                                    <div class="img">
+                                        <img src="assets/img/projects/prog/2.png" alt="">
+                                    </div>
+                                    <div class="info">
+                                        <h5>
+                                            <a href="page-single-project-5.html"> Criftocy Landing Page </a> 
+                                        </h5>
+                                        <small class="d-block color-main text-uppercase"><a href="#">Website Development,</a> <a href="#">UI/UX Design</a></small>
+                                        <div class="text">
+                                            Trust our top minds to eliminate workflow pain points, implement new tech & app.
+                                        </div>
+                                        <div class="tags">
+                                            <a href="#">WordPress</a>
+                                            <a href="#">PHP</a>
+                                            <a href="#">HTML/CSS</a>
+                                            <a href="#">Figma</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====== slider pagination ====== -->
+                    <div class="swiper-pagination"></div>
+
+                    <!-- ====== slider navigation ====== -->
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+            </div>
+        </div>
+        <img src="assets/img/projects/prog/shap_r.png" alt="" class="shap_r">
+        <img src="assets/img/projects/prog/shap_l.png" alt="" class="shap_l">
+    </section>
+    <!-- ====== end portfolio ====== -->
+
+    
+    <!-- ====== start testimonials ====== -->
+    <section class="testimonials section-padding style-1">
+        <div class="container">
+            <div class="section-head mb-60 text-center">
+                <h6 class="color-main text-uppercase wow fadeInUp">testimonials</h6>
+                <h2 class="wow fadeInUp">
+                    The Trust <span class="fw-normal">From Clients</span>
+                </h2>
+            </div>
+            <div class="content">
+                <div class="row">
+                    <div class="col-lg-5">
+                        <div class="vid_img mb-2 mb-md-0 wow zoomIn slow">
+                            <img src="assets/img/testimonials/testi.jpeg" alt="">
+                            <a href="https://youtu.be/pGbIOC83-So?t=21" data-lity class="play_icon">
+                                <i class="bi bi-play"></i>
+                            </a>
+                            <div class="img_info wow fadeInUp">
+                                <h4><a href="#">Casper Defloy</a></h4>
+                                <small><a href="#">Tech Leader at Esty Inc</a></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="info wow fadeInUp">
+                            <div class="client_card mb-2" data-wow-delay="0">
+                                <div class="user_img">
+                                    <img src="assets/img/testimonials/user1.jpeg" alt="">
+                                </div>
+                                <div class="inf_content">
+                                    <div class="rate_stars">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <h6>
+                                        “EzWeb was easy to work with. They understood our vision right away and did an excellent job at executing it, making for an efficient, as well as friendly, experience.”
+                                    </h6>
+                                    <p>Ibrahima K.  <span class="text-muted">/  Senior Marketing at Amazon</span></p>
+                                </div>
+                            </div>
+                            <div class="client_card mb-2" data-wow-delay="0.2s">
+                                <div class="user_img">
+                                    <img src="assets/img/testimonials/user2.jpeg" alt="">
+                                </div>
+                                <div class="inf_content">
+                                    <div class="rate_stars">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <h6>
+                                        “Aside from high quality developers and designers, what really made the difference working with EzWeb was the exceptional project management. I always felt confident everything was in hand and together we delivered a new website exactly on deadline.”
+                                    </h6>
+                                    <p> Ben S.  <span class="text-muted">/  CEO at ThemesCamp</span></p>
+                                </div>
+                            </div>
+                            <div class="client_card" data-wow-delay="0.4s">
+                                <div class="user_img">
+                                    <img src="assets/img/testimonials/user3.jpeg" alt="">
+                                </div>
+                                <div class="inf_content">
+                                    <div class="rate_stars">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <h6>
+                                        “EzWeb has given us a very professional and friendly service throughout our website design, website development to our ongoing cloud services. I would highly recommend EzWeb for Cloud and website development services.”
+                                    </h6>
+                                    <p>Alexander A.  <span class="text-muted">/  Tech Leader of Traveloka</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- ====== end testimonials ====== -->
+
+    <!-- ====== start team ====== -->
+    <section class="team section-padding pt-0 style-1">
+        <div class="container">
+            <div class="section-head mb-60 text-center">
+                <h6 class="color-main text-uppercase wow fadeInUp">meet our expert</h6>
+                <h2 class="wow fadeInUp">
+                    Clients Satisfaction, <span class="fw-normal">Our Reputation</span>
+                </h2>
+            </div>
+            <div class="content">
+                <div class="team_box wow fadeInUp" data-wow-delay="0">
+                    <div class="avatar">
+                        <img src="assets/img/team/1.jpeg" alt="">
+                    </div>
+                    <div class="info">
+                        <h6><a href="#">Karanpal Singh</a></h6>
+                        <small>CEO Founder</small>
+                        <div class="social_icons">
+                            <a href="#">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team_box wow fadeInUp" data-wow-delay="0.2s">
+                    <div class="avatar">
+                        <img src="assets/img/team/2.jpeg" alt="">
+                    </div>
+                    <div class="info">
+                    <h6><a href="#">Karanpal Singh</a></h6>
+                        <small>CTO</small>
+                        <div class="social_icons">
+                            <a href="#">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team_box wow fadeInUp" data-wow-delay="0.4s">
+                    <div class="avatar">
+                        <img src="assets/img/team/3.jpeg" alt="">
+                    </div>
+                    <div class="info">
+                        <h6><a href="#">Himanshu Singh</a></h6>
+                        <small>Project Manager</small>
+                        <div class="social_icons">
+                            <a href="#">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team_box wow fadeInUp" data-wow-delay="0.6s">
+                    <div class="avatar">
+                        <img src="assets/img/team/4.jpeg" alt="">
+                    </div>
+                    <div class="info">
+                        <h6><a href="#">Gurpreet Singh</a></h6>
+                        <small>Marketing Leader</small>
+                        <div class="social_icons">
+                            <a href="#">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team_box wow fadeInUp" data-wow-delay="0.8s">
+                    <div class="avatar">
+                        <img src="assets/img/team/5.jpeg" alt="">
+                    </div>
+                    <div class="info">
+                    <h6><a href="#">Venushreyan bhatt</a></h6>
+                        <small>Creative Director</small>
+                        <div class="social_icons">
+                            <a href="#">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#">
+                                <i class="fab fa-github"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bttns mt-4 text-center">
+                <a href="page-about-5.html" class="btn btn-dark wow zoomIn">
+                    <span>See All Team</span>
+                </a>
+                <a href="page-contact-5.html" class="btn butn-gard border-0 text-white wow zoomIn">
+                    <span>Join Our Team</span>
+                </a>
+            </div>
+        </div>
+        <img src="assets/img/team/team_shap.png" alt="" class="team_shap">
+    </section>
+    <!-- ====== end team ====== -->
+
+   
+
+
+    

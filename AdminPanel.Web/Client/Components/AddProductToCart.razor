@@ -1,0 +1,206 @@
+﻿@inject IStateService _sate
+@inject IHttpService _http
+@inject IAuthService _auth
+@inject NavigationManager _nav
+@implements IDisposable
+<style>
+    .rz-spinner {
+        background: var(--primary);
+        text-align: center !important;
+    }
+</style>
+
+@if (!ShowQtyButtons)
+{
+    <RadzenButton Icon="shopping_basket" class="product-add" Click="AddMinToCartAndShowQty" Disabled="@IsDisabled">
+        <span>@(IsDetailview ? "add to cart" : "add")</span>
+    </RadzenButton>
+    @* <button class="product-add" title="Add to Cart" @onclick="@AddMinToCartAndShowQty" disabled="@IsDisabled">
+        <i class="fas fa-shopping-basket"></i>
+        
+    </button> *@
+}
+else
+{
+    <div class="product-action" style="display:flex">
+        <button class="action-minus" title="Quantity Minus" @onclick="@QtyMinus"><i class="icofont-minus"></i></button>
+        <RadzenNumeric @ref="qtyBox" Max="maxVal" TValue="double" @bind-Value="@qty" class="action-input" ShowUpDown=false Change="@(args => OnChange(args))" />
+        <button class="action-plus" title="Quantity Plus" @onclick="@QtyPlus"><i class="icofont-plus"></i></button>
+    </div>
+}
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    NotificationMessage msg = new NotificationMessage() { Duration = 4000 };
+
+    [Parameter]
+    public ProductListBO Product { get; set; } = new();
+    [Parameter]
+    public bool IsDetailview { get; set; } = false;
+    [Parameter]
+    public bool IsDisabled { get; set; } = false;
+    [Parameter]
+    public bool IsProdDetail { get; set; } = false;
+
+    public bool ShowQtyButtons { get; set; } = false;
+
+    TempCartBO model = new();
+
+    double qty = 1;
+    double minQty, maxQty;
+    bool orderMultiples = false;
+    decimal maxVal = 0;
+    RadzenNumeric<double>? qtyBox;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        //ShowQtyButtons = Product.IsInCart && _state.IsAuthenticated;
+
+        minQty = Product.MinOrderQty.HasValue ? Product.MinOrderQty.Value : 1;
+        // need to choose max based on stock and prod.maxOrderQty, which ever is available.
+        maxQty = Product.MaxOrderQty.HasValue ? Product.MaxOrderQty.Value : 20;
+
+        qty = Product.IsInCart ? Product.CartQuantity : minQty;
+        maxVal = (decimal)maxQty;
+
+        SetInitialValues();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ShowQtyButtons = Product.IsInCart && _state.IsAuthenticated;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void SetInitialValues()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.UserId = _state.UserId;
+        model.CustomerId = _state.CustomerId;
+        model.DeviceToken = "web view";
+        model.DeviceType = "Web";
+    }
+
+    async Task AddMinToCartAndShowQty()
+    {
+        // do nothing if the user is not authorized
+        if (!_state.IsAuthenticated)
+        {
+            _notify.WarningMsg("Please login to add items to cart.");
+            return;
+        }
+
+        ShowQtyButtons = true;
+
+        if (Product.ProductAttrMappings?.Count() > 0 && !IsProdDetail)
+        {
+            _nav.NavigateTo($"/Product/{Product.ProductId}");
+            return;
+        }
+
+        await AddToCart(minQty);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void QtyPlus()
+    {
+        if (Product.ProductAttrMappings?.Count() > 0 && !IsProdDetail)
+        {
+            _nav.NavigateTo($"/Product/{Product.ProductId}");
+            return;
+        }
+
+        if (qty < maxQty)
+        {
+            qty = qty + (orderMultiples ? minQty : 1);
+            qtyBox?.Change.InvokeAsync(qty);
+        }
+        StateHasChanged();
+    }
+
+    void QtyMinus()
+    {
+        if (Product.ProductAttrMappings?.Count() > 0 && !IsProdDetail)
+        {
+            _nav.NavigateTo($"/Product/{Product.ProductId}");
+            return;
+        }
+        if (qty > minQty)
+        {
+            qty = qty - (orderMultiples ? minQty : 1);
+            qtyBox?.Change.InvokeAsync(qty);
+        }
+
+        StateHasChanged();
+    }
+
+    async Task OnChange(dynamic value)
+    {
+        if (value >= maxQty)
+        {
+            qtyBox.Value = maxQty;
+        }
+        await AddToCart(value);
+    }
+
+    async Task AddToCart(double qty)
+    {
+        // code to add item to cart
+        Console.WriteLine($"Insert to cart with Qty value {qty}");
+        try
+        {
+            var items = new List<TempCartItemsBO>();
+
+            items.Add(new TempCartItemsBO()
+                {
+                    ProductId = Product.ProductId,
+                    Price = Product.Price,
+                    UnitId = Product.UnitId,
+                    Quantity = qty,
+                    IsGst = Product.IsGst,
+                    AttributePriceAdjustment = Product.AttributePriceAdjustment,
+                    AttributeMappingJson = Product.AttributeMappingJson,
+                    CommentId = Product.CommentId
+                });
+
+            model.CartItems = items;
+
+            loading.Start();
+            var response = await _http.PostRequest<GenericResponse<CartCountBO>>($"api/Order/AddItemsToTempCart", model, cts);
+
+            if (response.IsSuccess)
+            {
+                _state.CartCountBO = response.Data;
+                _notify.SuccessMsg(response.Message);
+            }
+            else
+            {
+                _notify.ErrorMsg(response.Message);
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            _notify.ErrorMsg(ex.Message);
+        }
+        finally
+        {
+            loading.Stop();
+        }
+
+    }
+
+    public async Task Refresh(ProductListBO prod)
+    {
+        Product = prod;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

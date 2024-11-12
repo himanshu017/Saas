@@ -1,0 +1,47 @@
+﻿@layout AuthLayout
+@inherits LayoutComponentBase
+@inject IDomainService _domain
+<RadzenDialog />
+<HeadContent>
+    <link rel="stylesheet" href="theme/css/user-auth.css?v=@DateTime.Now.Ticks">
+</HeadContent>
+
+    <style>
+        :root {
+            --primary: @primaryColor;
+        }
+    </style>
+<!--=====================================
+                    USER FORM PART START
+=======================================-->
+<section class="user-form-part loginBg">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-12 col-lg-12 col-xl-5">
+                <div class="user-form-logo">
+                    <a href="/"><img src="theme/images/ez-logo.svg" height="70" alt="logo"></a>
+                </div>
+
+                @Body
+
+                <div class="user-form-footer">
+                    <p>EzOrders | &COPY; Copyright by <a href="#">Burmi Inc</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+            USER FORM PART END
+=======================================-->
+@code {
+    string primaryColor = "";
+    string secondary = "";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        primaryColor = $"{_state.PrimaryColor} !important";
+        secondary = $"{_state.SecondaryColor} !important"; 
+    }
+
+}

@@ -1,0 +1,72 @@
+﻿@page "/Admin/ViewCompanies"
+
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+<PageHeader Title="All Companies" />
+<Loading @ref="loading" />
+
+<RadzenCard>
+    <RadzenDataGrid @ref="grid" TItem="CompanyModelBO" Data="@allCompanies" ExpandMode="DataGridExpandMode.Single"
+                    RowUpdate="@Update" RowCreate="@Update">
+        <Columns>
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="CompanyName" Title="Company Name" />
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="ContactPerson" Title="Contact" />
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="Phone" Title="Phone" Width="100px" />
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="DomainName" Title="Domain Name" />
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="IsActive" Title="Web App" Width="80px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsWebOrdering ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsWebOrdering ? "Yes" : "No")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="IsActive" Title="Mobile App" Width="100px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsMobileOrdering ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsMobileOrdering ? "Yes" : "No")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="IsActive" Title="POD" Width="80px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsProofOfDelivery ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsProofOfDelivery ? "Yes" : "No")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanyModelBO" Property="DomainName" Title="Is Active" Width="100px">
+                <Template Context="row">
+                    <RadzenSwitch @bind-Value="@row.IsActie"/>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanyModelBO" Title="Config" Width="90px" CssClass="text-center" HeaderCssClass="text-center">
+                <Template Context="row">
+                    <a href="/Admin/CompanyConfig/@row.CompanyId" class="text-decoration-none fs-4"><RadzenIcon Icon="settings" /></a>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    RadzenDataGrid<CompanyModelBO>? grid;
+    IEnumerable<CompanyModelBO> allCompanies;
+    Loading loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetAll();
+    }
+
+    async Task GetAll()
+    {
+        loading.ShowLoading();
+        allCompanies = await _httpClient.GetFromJsonAsync<IEnumerable<CompanyModelBO>>($"Company/GetAllCompanies");
+
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+    async Task Update(CompanyModelBO row)
+    {
+
+    }
+}

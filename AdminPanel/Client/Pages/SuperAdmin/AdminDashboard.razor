@@ -1,0 +1,20 @@
+﻿@layout SuperAdminLayout
+@page "/AdminDashboard"
+@inject IStateService _state
+
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+<PageHeader Title="Admin Overview" />
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        // set the company Id back to 0 in case the master admin 
+        // redirects from the company admin section.
+        _state.CompanyId = 0;
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

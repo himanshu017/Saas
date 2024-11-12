@@ -1,0 +1,537 @@
+﻿@page "/Admin/ManageCategories"
+@implements IDisposable
+
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@inject IStateService _state
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+
+<PageHeader Title="Categories/Filters" />
+<AlertMessage AlertModel="@alert" />
+
+<RadzenTabs RenderMode="TabRenderMode.Client">
+    <Tabs>
+        <RadzenTabsItem Text="Categories">
+            <GridInsertButton Grid="grid" TItem="CategoriesBO" OnCreateItem="@(() => new CategoriesBO())" Disabled="@addBtnDisabled" />
+
+            <RadzenDataGrid @ref="grid" TItem="CategoriesBO" Data="@allCategoires"
+                            EditMode="DataGridEditMode.Single" RowUpdate="@AddEdit" RowCreate="@AddEdit" PageSize="10" AllowPaging="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="CategoriesBO" Property="Type" Title="Category Name">
+                        <Template Context="row">
+                            <span>@row.CategoryName</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.CategoryName" class="form-control" MaxLength="100" Name="Type" />
+                            <RadzenRequiredValidator Component="Type" Text="Status type is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="CategoriesBO" Property="IsActive" Title="Active">
+
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsActive" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+
+                    <RadzenDataGridColumn TItem="CategoriesBO" Property="IsFeatured" Title="Featured">
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsFeatured ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@(row.IsFeatured ? "Yes" : "No")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsFeatured" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="CategoriesBO" Property="IsSpecial" Title="Special">
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsSpecial ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@(row.IsSpecial ? "Yes" : "No")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsSpecial" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="CategoriesBO" Property="SortOrder" Title="Sort Order">
+                        <Template Context="row">
+                            <span>@row.SortOrder</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenNumeric @bind-Value="row.SortOrder" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <GridControls TItem="CategoriesBO" Grid="grid" DeleteRow="Delete" Width="120px" OnAction="@((val) => addBtnDisabled = val )" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Sub Categories">
+            <GridInsertButton Grid="subgrid" TItem="SubCategoriesBO" OnCreateItem="@(() => new SubCategoriesBO())" Disabled="@(mainCategoryid == 0)">
+                <RadzenDropDown Placeholder="Choose Main Category" AllowClear="true" Name="Category"
+                                @bind-Value="mainCategoryid" Data="@allCategoires" TextProperty="CategoryName" ValueProperty="Id" Change="OnChange" />
+
+            </GridInsertButton>
+
+            <RadzenDataGrid @ref="subgrid" TItem="SubCategoriesBO" Data="@allSubCategoires" PageSize="10" AllowPaging="true"
+                            EditMode="DataGridEditMode.Single" RowUpdate="@AddEditSubCategory" RowCreate="@AddEditSubCategory">
+                <Columns>
+                    <RadzenDataGridColumn TItem="SubCategoriesBO" Property="SubCategoryName" Title="Sub Category Name">
+                        <Template Context="row">
+                            <span>@row.SubCategoryName</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.SubCategoryName" class="form-control" MaxLength="100" Name="SubCategoryName" />
+                            <RadzenRequiredValidator Component="SubCategoryName" Text="Status is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="SubCategoriesBO" Property="IsActive" Title="Active">
+
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsActive" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="SubCategoriesBO" Property="SortOrder" Title="Sort Order">
+
+                        <Template Context="row">
+                            <span>@row.SortOrder</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenNumeric @bind-Value="row.SortOrder" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                    <GridControls TItem="SubCategoriesBO" Grid="subgrid" DeleteRow="DeleteSubCategory" Width="120px" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Filters">
+            <GridInsertButton Grid="filtergrid" TItem="FiltersBO" OnCreateItem="@(() => new FiltersBO())" />
+
+            <RadzenDataGrid @ref="filtergrid" TItem="FiltersBO" Data="@allfilters" PageSize="10" AllowPaging="true"
+                            EditMode="DataGridEditMode.Single" RowUpdate="@AddEditFilter" RowCreate="@AddEditFilter">
+                <Columns>
+                    <RadzenDataGridColumn TItem="FiltersBO" Property="Name" Title="Filter Name">
+                        <Template Context="row">
+                            <span>@row.Name</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.Name" class="form-control" MaxLength="100" Name="Name" />
+                            <RadzenRequiredValidator Component="Name" Text="Name is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FiltersBO" Property="Code" Title="Code">
+                        <Template Context="row">
+                            <span>@row.Code</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.Code" class="form-control" MaxLength="100" Name="code" />
+                            <RadzenRequiredValidator Component="code" Text="Code is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FiltersBO" Property="IsActive" Title="Active">
+
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsActive" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+
+
+                    <GridControls TItem="FiltersBO" Grid="filtergrid" DeleteRow="DeleteFilter" Width="120px" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Unit Of Measurement">
+            <GridInsertButton Grid="uomgrid" TItem="UnitOfMeasureBO" OnCreateItem="@(() => new UnitOfMeasureBO())" />
+
+            <RadzenDataGrid @ref="uomgrid" TItem="UnitOfMeasureBO" Data="@alluoms" PageSize="10" AllowPaging="true"
+                            EditMode="DataGridEditMode.Single" RowUpdate="@AddEditUOM" RowCreate="@AddEditUOM">
+                <Columns>
+                    <RadzenDataGridColumn TItem="UnitOfMeasureBO" Property="Name" Title="Unit Name">
+                        <Template Context="row">
+                            <span>@row.Name</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.Name" class="form-control" MaxLength="100" Name="Name" />
+                            <RadzenRequiredValidator Component="Name" Text="Name is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="UnitOfMeasureBO" Property="Code" Title="Code">
+                        <Template Context="row">
+                            <span>@row.Code</span>
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenTextBox @bind-Value="row.Code" class="form-control" MaxLength="100" Name="code" />
+                            <RadzenRequiredValidator Component="code" Text="Code is required" Popup="true" Style="position: absolute" />
+                        </EditTemplate>
+
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="UnitOfMeasureBO" Property="IsActive" Title="Active">
+
+                        <Template Context="row">
+                            <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                        </Template>
+                        <EditTemplate Context="row">
+                            <RadzenSwitch @bind-Value="row.IsActive" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+
+
+                    <GridControls TItem="UnitOfMeasureBO" Grid="uomgrid" DeleteRow="DeleteUOM" Width="120px" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    RadzenDataGrid<CategoriesBO> grid;
+    RadzenDataGrid<SubCategoriesBO> subgrid;
+    RadzenDataGrid<FiltersBO> filtergrid;
+    RadzenDataGrid<UnitOfMeasureBO> uomgrid;
+    AlertBO alert = new AlertBO();
+    IEnumerable<CategoriesBO> allCategoires;
+    IEnumerable<SubCategoriesBO> allSubCategoires;
+    IEnumerable<FiltersBO> allfilters;
+    IEnumerable<UnitOfMeasureBO> alluoms;
+    long mainCategoryid;
+    bool addBtnDisabled = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllCategories(_state.CompanyId);
+        await GetAllFilters(_state.CompanyId);
+        await GetAllUOMs(_state.CompanyId);
+    }
+
+    async Task GetAllCategories(long id)
+    {
+        allCategoires = await _httpClient.GetFromJsonAsync<IEnumerable<CategoriesBO>>($"Categories/GetAllCategories?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEdit(CategoriesBO row)
+    {
+        if (row.Id == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+        row.CompanyId = _state.CompanyId;
+        var request = await _httpClient.PostAsJsonAsync("Categories/AddEditMainCategories", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAllCategories(_state.CompanyId);
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        else
+        {
+            alert.Visible = true;
+            alert.Message = await request.Content.ReadAsStringAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(CategoriesBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.CategoryName}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("Categories/Delete", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAllCategories(_state.CompanyId);
+                    await grid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = await request.Content.ReadAsStringAsync();
+            }
+        }
+    }
+
+    async Task OnChange(object value)
+    {
+        await GetAllSubCategories((long)value);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllSubCategories(long id)
+    {
+        allSubCategoires = await _httpClient.GetFromJsonAsync<IEnumerable<SubCategoriesBO>>($"Categories/GetAllSubCategoryById?Id={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEditSubCategory(SubCategoriesBO row)
+    {
+        if (row.Id == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+        row.MainCategoryId = mainCategoryid;
+        var request = await _httpClient.PostAsJsonAsync("Categories/AddEditMainSubCategories", row, cts.Token);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAllSubCategories(mainCategoryid);
+                await subgrid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        else
+        {
+            alert.Visible = true;
+            alert.Message = await request.Content.ReadAsStringAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteSubCategory(SubCategoriesBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.SubCategoryName}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("Categories/DeleteSubCategory", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAllSubCategories(mainCategoryid);
+                    await subgrid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = await request.Content.ReadAsStringAsync();
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task GetAllFilters(long id)
+    {
+        allfilters = await _httpClient.GetFromJsonAsync<IEnumerable<FiltersBO>>($"Categories/GetAllFilters?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEditFilter(FiltersBO row)
+    {
+        if (row.FilterId == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+        row.CompanyId = _state.CompanyId;
+        var request = await _httpClient.PostAsJsonAsync("Categories/AddEditFilters", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAllFilters(_state.CompanyId);
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        else
+        {
+            alert.Visible = true;
+            alert.Message = await request.Content.ReadAsStringAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteFilter(FiltersBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.Name}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("Categories/DeleteFilter", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAllFilters(_state.CompanyId);
+                    await grid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = await request.Content.ReadAsStringAsync();
+            }
+        }
+    }
+
+    async Task GetAllUOMs(long id)
+    {
+        alluoms = await _httpClient.GetFromJsonAsync<IEnumerable<UnitOfMeasureBO>>($"Categories/GetAllUnitofMeasures?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEditUOM(UnitOfMeasureBO row)
+    {
+        if (row.UnitId == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+        row.CompanyId = _state.CompanyId;
+        var request = await _httpClient.PostAsJsonAsync("Categories/AddEditUOM", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAllUOMs(_state.CompanyId);
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        else
+        {
+            alert.Visible = true;
+            alert.Message = await request.Content.ReadAsStringAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteUOM(UnitOfMeasureBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.Name}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("Categories/DeleteUOM", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAllUOMs(_state.CompanyId);
+                    await uomgrid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = await request.Content.ReadAsStringAsync();
+            }
+        }
+    }
+
+    // 👇 Cancel the token
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

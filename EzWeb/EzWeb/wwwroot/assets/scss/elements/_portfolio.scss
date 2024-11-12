@@ -1,0 +1,211 @@
+
+
+
+/* --------------- portfolio styles --------------- */
+
+.portfolio.style-1 {
+    position: relative;
+    .shap_r {
+        position: absolute;
+        right: 0;
+        top: 30px;
+        width: 30%;
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    .shap_l {
+        position: absolute;
+        left: 0;
+        bottom: 20px;
+        width: 40%;
+        opacity: 1;
+        pointer-events: none;
+    }
+    .portfolio-slider {
+        position: relative;
+        padding-bottom: 60px;
+        .swiper-button-next,
+        .swiper-button-prev {
+            transform: translateY(-50%);
+        }
+        .swiper-button-next,
+        .swiper-container-rtl .swiper-button-prev {
+            right: -70px;
+        }
+        .swiper-button-prev,
+        .swiper-container-rtl .swiper-button-next {
+            left: -70px;
+        }
+    }
+    .portfolio-card {
+        background-color: #fff;
+        border-radius: 7px;
+        overflow: hidden;
+        .img {
+            height: 240px;
+            overflow: hidden;
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+        .info {
+            padding: 30px;
+            h5 {
+                a {
+                    color: #000;
+                    font-weight: bold;
+                }
+            }
+
+            small{
+                font-size: 10px;
+                letter-spacing: 1px;
+                margin-top: 5px;
+            }
+            .text {
+                color: #666;
+                margin: 15px 0 20px;
+                font-size: 13px;
+            }
+            .tags {
+                a {
+                    font-size: 11px;
+                    padding: 3px 7px;
+                    margin-top: 10px;
+                    border-radius: 4px;
+                    background-color: #eef4f8;
+                }
+            }
+        }
+        &:hover {
+            h5 {
+                a {
+                    color: var(--color-main);
+                }
+            }
+        }
+    }
+}
+
+// ---------- projects style-3 ----------
+.projects.style-3{
+    background-color: #f0eff5;
+}
+
+.project-card.style-3{
+    position: relative;
+    overflow: hidden;
+    .img{
+        height: 360px;
+        border-radius: 15px;
+        overflow: hidden;
+        img{
+            transition: all 1s ease;
+        }
+    }
+    .info{
+        position: absolute;
+        z-index: 5;
+        bottom: 20px;
+        left: 20px;
+        background-color: #fff;
+        border-radius: 15px;
+        display: inline-block;
+        padding: 20px 25px;
+        transition: all 0.4s ease;
+        transform: translateY(150%);
+        opacity: 0;
+        .h5{
+            font-weight: bold;
+            font-size: 19px;
+            margin-bottom: 0;
+            color: #000;
+        }
+        .small{
+            font-size: 11px;
+            color: #999;
+        }
+    }
+    &:hover{
+        .img{
+            img{
+                transform: scale(1.1) rotate(-5deg);
+            }
+        }
+        .info{
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+/* --------------- projects style-6 --------------- */
+.projects.style-6{
+    padding: 0 30px;
+    .content{
+        background-color: #f1f2fa;
+        position: relative;
+        padding: 100px 0;
+        border-radius: 30px;
+    }
+}
+
+.project-card.style-6{
+    border-radius: 8px;
+    overflow: hidden;
+    display: block;
+    margin: 0 15px;
+    &:hover{
+        box-shadow: 0px 40px 35px 0px #51558622;
+    }
+    a:hover{
+        color: var(--color-blue6);
+    }
+    .img{
+        height: 240px;
+        overflow: hidden;
+        img{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+    .info{
+        background-color: #fff;
+        padding: 40px;
+        transition: all 0.3s ease;
+        .title{
+            color: #000;
+            font-size: 21px;
+            &:hover{
+                color: var(--color-blue6);
+                a{
+                    color: var(--color-blue6);
+                }
+            }
+        }
+        small{
+            font-size: 11px;
+            color: var(--color-blue6);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .text{
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+        .tags {
+            span {
+                color: #010101;
+                font-size: 10px;
+                padding: 3px 7px;
+                border-radius: 4px;
+                background-color: #f1f2fa;
+            }
+        }
+    }
+
+}

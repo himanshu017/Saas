@@ -1,0 +1,26 @@
+﻿@page "/"
+@inject IStateService _state
+@inject NavigationManager _nav
+@attribute [Authorize]
+
+<div style="position:absolute; top:30vh; width:100%; text-align:center">
+    <img src="Images/ez-logo-dark.svg" alt="logo" height="200">
+</div>
+
+@code{
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if(_state.CompanyId > 0)
+        {
+            _nav.NavigateTo("/Dashboard");
+        }
+        else
+        {
+            _nav.NavigateTo("/AdminDashboard");
+        }
+    }
+
+}

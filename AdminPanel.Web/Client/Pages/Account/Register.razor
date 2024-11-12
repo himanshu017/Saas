@@ -1,0 +1,103 @@
+﻿@page "/Register"
+
+@inject CustomAuthenticationStateProvider _auth
+@inject NavigationManager _nav
+@inject IStateService _state
+
+<div class="user-form-card">
+    <div class="user-form-title">
+        <h2>Join Now!</h2>
+        <p>Setup A New Account In A Minute</p>
+    </div>
+    <AlertMessage Model="alert" />
+    <div class="user-form-group">
+        @* <ul class="user-form-social">
+        <li><a href="#" class="facebook"><i class="fab fa-facebook-f"></i>Join with facebook</a></li>
+        <li><a href="#" class="twitter"><i class="fab fa-twitter"></i>Join with twitter</a></li>
+        <li><a href="#" class="google"><i class="fab fa-google"></i>Join with google</a></li>
+        <li><a href="#" class="instagram"><i class="fab fa-instagram"></i>Join with instagram</a></li>
+        </ul>
+        <div class="user-form-divider">
+        <p>or</p>
+        </div>*@
+        <RadzenTemplateForm TItem="AppUserRegisterBO" Data="model" class="user-form" Submit="RegisterUser" Visible="@showForm">
+            <div class="form-group">
+                <RadzenTextBox class="form-control" Name="FName" Placeholder="Enter first name" @bind-Value="model.FirstName" />
+                <RadzenRequiredValidator Component="FName" Text="First name is required" />
+            </div>
+            <div class="form-group">
+                <RadzenTextBox class="form-control" Name="LName" Placeholder="Enter last name" @bind-Value="model.LastName" />
+                <RadzenRequiredValidator Component="LName" Text="Last name is required" />
+            </div>
+            <div class="form-group">
+                <RadzenTextBox class="form-control" Name="Phone" Placeholder="Enter phone no" @bind-Value="model.Phone" />
+                <RadzenRequiredValidator Component="Phone" Text="Phone is required" />
+            </div>
+            <div class="form-group">
+                <RadzenTextBox class="form-control" Name="Email" Placeholder="Enter email" @bind-Value="model.Email" AutoComplete="false" />
+                <RadzenRequiredValidator Component="Email" Text="Email is required" />
+            </div>
+            <div class="form-group">
+                <RadzenPassword class="form-control" Name="Password" Placeholder="Enter password" @bind-Value="model.Password" AutoComplete="false" />
+                <RadzenRequiredValidator Component="Password" Text="Password is required" />
+            </div>
+            <div class="mb-3">
+                <RadzenCheckBox @bind-Value="model.IsTermsAndConditions" Name="chkTerms" TValue="bool" />
+                <label class="form-check-label" for="chkTerms">Accept all the <a href="javascript:;">Terms & Conditions</a></label>
+                <RadzenRequiredValidator Component="chkTerms" Text="Please agree to terms & conditions" />
+            </div>
+            <div class="form-button">
+                <button type="submit">register</button>
+            </div>
+        </RadzenTemplateForm>
+    </div>
+</div>
+<div class="user-form-remind">
+    <p>Already Have An Account?<a href="/Login">login here</a></p>
+</div>
+@code {
+    AppUserRegisterBO model = new()
+        {
+            UserTypeID = (byte)UserTypes.AppUser,
+            DeviceToken = "Webapp",
+            DeviceType = "Web"
+        };
+
+    AlertBO alert = new() { Visible = false, Type = "danger" };
+    bool showForm = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    async Task RegisterUser()
+    {
+        try
+        {
+            loading.Start();
+            model.CompanyId = _state.CompanyId;
+
+            var response = await _auth.Register(model);
+            if (response.IsSuccess)
+            {
+                alert.Type = "success";
+                showForm = false;
+            }
+
+            alert.Visible = true;
+            alert.Message = response.Message;
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            alert.Message = ex.Message;
+            alert.Type = "danger";
+        }
+        finally
+        {
+            loading.Stop();
+        }
+    }
+}

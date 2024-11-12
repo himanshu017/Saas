@@ -1,0 +1,73 @@
+﻿@inject HttpClient _http
+@inject DialogService _dialog
+@inject NavigationManager _navManager
+<RadzenDataGrid Data="prodAttributes" TItem="ProductAttrListingBO" Density="Density.Compact">
+    <Columns>
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Property="AttributeName" Title="Attribute" Width="120px" >
+            <Template Context="row">
+                <span style="@(row.IsActive == false ? "text-decoration:line-through" : "")">
+                    @row.AttributeName
+                </span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Property="Placeholder" Title="Placeholder Text" />
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Property="IsRequired" Title="Required" Width="100px" CssClass="text-center">
+            <Template Context="row">
+                <RadzenBadge BadgeStyle="@((row.IsRequired ?? false )? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@((row.IsRequired ?? false) ? "Yes" : "No")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Property="DisplayControlTypeId" Title="Display Control" Width="140px">
+            <Template Context="row">
+                <span>@(((AttrDisplayControlType)row.DisplayControlTypeId).GetDisplayDescription())</span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Property="DisplayOrder" Title="Order" Width="60px" />
+        <RadzenDataGridColumn TItem="ProductAttrListingBO" Title="" Width="120px">
+            <Template Context="row">
+                <div class="d-flex justify-content-between ">
+                    <RadzenButton Text="Edit" ButtonStyle="ButtonStyle.Light" Click="@(() => ManageAttributes(row))" Size="ButtonSize.ExtraSmall" />
+                    <ToggleAttributeState Id="row.Id" Type="ToggleAttrType.AttributeMapping" IsActive="row.IsActive" OnUpdate="OnToggleUpdate" />
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    [Parameter]
+    public long? ProductId { get; set; }
+
+    RadzenDataGrid<ProductAttrListingBO>? grid;
+    IEnumerable<ProductAttrListingBO>? prodAttributes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetAllProductAttributes();
+    }
+
+    async Task GetAllProductAttributes()
+    {
+        prodAttributes = await _http.GetFromJsonAsync<IEnumerable<ProductAttrListingBO>>($"Attribute/GetProductAttributes?productId={ProductId}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void ManageAttributes(ProductAttrListingBO row)
+    {
+        _navManager.NavigateTo($"/product/attribute?mId={row.Id}&pId={ProductId}");
+    }
+
+    async void OnToggleUpdate(BaseResponseBO res)
+    {
+        if (res.IsSuccess)
+        {
+            _notifyS.SuccessMsg("", $"Attribute value updated");
+            await GetAllProductAttributes();
+        }
+        else
+        {
+            _notifyS.ErrorMsg("", res.Message);
+        }
+    }
+}

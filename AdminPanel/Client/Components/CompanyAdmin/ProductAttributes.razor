@@ -1,0 +1,203 @@
+﻿@page "/product/attribute"
+
+@inject HttpClient _httpClient
+@inject DialogService _dialog
+@inject NavigationManager _nav
+
+<div class="mb-2">
+    <RadzenLink Icon="arrow_back" Text="Back to product detail" Path="@($"/AddProduct?x={ProductId}")"
+                class="rz-button rz-button-md rz-variant-filled rz-primary rz-shade-default me-2" />
+</div>
+<RadzenCard>
+    <h5>Attribute</h5>
+    <div>
+        <RadzenTemplateForm TItem="ProductAttrMappingBO" Data="model" Submit="AddUpdateProductAttribute">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeSM="6">
+                    <RadzenStack>
+                        <RadzenFormField Text="Attribute" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenDropDown Data="allAttributes" TextProperty="Name" Placeholder="Choose attribute" ValueProperty="Id" @bind-Value="@model.AttributeId" Name="AttrName" />
+                            </ChildContent>
+                            <Helper>
+                                <RadzenRequiredValidator Component="AttrName" Text="Attribute is required" DefaultValue="0" />
+                            </Helper>
+                        </RadzenFormField>
+                        <RadzenFormField Text="Plceholder Text" Variant="Variant.Outlined">
+                            <RadzenTextBox @bind-Value="@model.Placeholder" />
+                        </RadzenFormField>
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeSM="6">
+                    <RadzenStack>
+                        <RadzenFormField Text="Display Order" Variant="Variant.Outlined">
+                            <Start>
+                                <RadzenIcon Icon="low_priority" />
+                            </Start>
+                            <ChildContent>
+                                <RadzenNumeric @bind-Value="model.DisplayOrder" TValue="byte?" Min="0" />
+                            </ChildContent>
+                        </RadzenFormField>
+                        <RadzenFormField Text="Display Control" Variant="Variant.Outlined">
+                            <ChildContent>
+                                <RadzenDropDown Data="@(Enum.GetValues(typeof(AttrDisplayControlType)).Cast<Enum>())" @bind-Value="controlType" Name="Ctrltype" />
+                            </ChildContent>
+                            <Helper>
+                                <RadzenRequiredValidator Component="Ctrltype" Text="Control type is required" DefaultValue="null" />
+                            </Helper>
+                        </RadzenFormField>
+                        <div>
+                            <RadzenCheckBox TValue="bool?" Name="chkIsReq" @bind-Value="model.IsRequired" />
+                            <RadzenLabel Text="Is Required" Component="chkIsReq" />
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Primary" class="me-2" ButtonType="ButtonType.Submit" />
+                            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _dialog.Close())" />
+                        </div>
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenTemplateForm>
+    </div>
+
+</RadzenCard>
+<RadzenCard class="mt-4" Visible="@(MappingId.HasValue)">
+    <div class="mt-3">
+        <div class="d-flex justify-content-between">
+            <h5>Attribute Values</h5>
+            <RadzenButton Text="Add Value" Icon="add_circle_outline" Click="@(() => ManageAttrValues(null))" class="mb-2" Size="ButtonSize.Small" />
+        </div>
+        <RadzenDataGrid Data="attributeValues" TItem="AttributeValuesBO" Density="Density.Compact">
+            <Columns>
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="Value" Title="Value" Width="120px" />
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="StockQuantity" Title="Stock" Width="70px" />
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="ColorRgb" Title="Color" Width="60px">
+                    <Template Context="row">
+                        <span style="height:10px;background-color:@row.ColorRgb;" class="w-100 d-block"></span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="IsPreSelected" Title="Pre Selected" Width="100px" CssClass="text-center">
+                    <Template Context="row">
+                        <RadzenBadge BadgeStyle="@((row.IsPreSelected ?? false )? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@((row.IsPreSelected ?? false) ? "Yes" : "No")" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="PriceAdjustment" Title="Price Change" Width="130px">
+                    <Template Context="row">
+                        <span>@((row.UsePercentage ?? false) ? $"{row.PriceAdjustment:f2}%" : row.PriceAdjustment.ToPrice(_state.CurrencyInfo))</span>
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="WeightAdjustment" Title="Weight Change" Width="120px" />
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Property="DisplayOrder" Title="Display Order" Width="100px" />
+                <RadzenDataGridColumn TItem="AttributeValuesBO" Width="100px" CssClass="text-center">
+                    <Template Context="row">
+                        <RadzenButton Size="ButtonSize.ExtraSmall" Text="Edit" ButtonStyle="ButtonStyle.Light" Click="@(() => ManageAttrValues(row))" />
+                        <ToggleAttributeState Id="row.Id" Type="ToggleAttrType.AttributeValue" IsActive="row.IsActive" OnUpdate="OnToggleUpdate" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+</RadzenCard>
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "pId")]
+    public long? ProductId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "mId")]
+    public int? MappingId { get; set; }
+
+    ProductAttrMappingBO? model = new();
+
+    IEnumerable<AttributeBO>? allAttributes;
+    int selectedAttr = 0;
+    AttrDisplayControlType? controlType;
+
+    IEnumerable<AttributeValuesBO>? attributeValues;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetAll();
+
+        if (MappingId.HasValue)
+        {
+            await GetAttributesValues();
+        }
+    }
+
+    async Task GetAll()
+    {
+        allAttributes = await _httpClient.GetFromJsonAsync<IEnumerable<AttributeBO>>($"Attribute/GetAllAttributes?companyId={_state.CompanyId}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAttributesValues()
+    {
+        model = await _httpClient.GetFromJsonAsync<ProductAttrMappingBO>($"Attribute/GetAttributesValues?attrId={MappingId}");
+        controlType = (AttrDisplayControlType)model.DisplayControlTypeId;
+
+        attributeValues = model.AttrValues;
+    }
+
+    async Task AddUpdateProductAttribute()
+    {
+        model.DisplayControlTypeId = (byte)controlType;
+        model.ProductId = (ProductId ?? 0);
+        var requset = await _httpClient.PostAsJsonAsync("Attribute/AddUpdateProductAttribute", model);
+
+        if (requset.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(requset.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                MappingId = (int?)response.Data;
+                _notifyS.SuccessMsg("Attribute updated successfully");
+            }
+            else
+            {
+                _notifyS.ErrorMsg(response.Message);
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ManageAttrValues(AttributeValuesBO? row)
+    {
+        var res = await _dialog.OpenAsync<ManageAttributeValues>("Manage Attributes Values",
+                new Dictionary<string, object>()
+                                                                        {
+                                { "MappingId", MappingId },
+                                { "Model", row ?? new AttributeValuesBO() },
+                                                                        },
+                new DialogOptions()
+                    {
+                        Width = "60%"
+                    });
+
+        if (res)
+        {
+            await GetAttributesValues();
+            await InvokeAsync(StateHasChanged);
+            _notifyS.SuccessMsg("","Attribute values updated successfully");
+        }
+    }
+
+    async void OnToggleUpdate(BaseResponseBO res)
+    {
+        if (res.IsSuccess)
+        {
+            _notifyS.SuccessMsg("", $"Attribute value updated");
+            await GetAttributesValues();
+        }
+        else
+        {
+            _notifyS.ErrorMsg("", res.Message);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+}

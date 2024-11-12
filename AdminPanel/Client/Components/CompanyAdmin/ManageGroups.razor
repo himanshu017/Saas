@@ -1,0 +1,397 @@
+﻿<RadzenTemplateForm TItem="GroupsBO" Data="model" Submit="AddEditGroup">
+    <div class="row mb-3">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Groups" />
+        </div>
+        <div class="col-md-9">
+            <RadzenDropDown @bind-Value="selectedGroup" Change="OnGroupChange" AllowClear="true"
+                            Placeholder="Select group to view or edit.."
+                            Data="@allGroups" TextProperty="Name" ValueProperty="Id" class="form-control" />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Group Name" />
+        </div>
+        <div class="col-md-9">
+            <RadzenTextBox @bind-Value="model.Name" class="form-control" Name="GroupName" />
+            <RadzenRequiredValidator Component="GroupName" Text="Group name is required" />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Group Type" />
+        </div>
+        <div class="col-md-9">
+            <RadzenRadioButtonList @bind-Value=@groupType TValue="int" Change="OnTypeChange">
+                <Items>
+                    <RadzenRadioButtonListItem Text="Customer" Value="1" />
+                    <RadzenRadioButtonListItem Text="Delivery Run" Value="2" Disabled="@(GroupScopeId == (byte)GroupScopes.Message)" />
+                </Items>
+            </RadzenRadioButtonList>
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Active" />
+        </div>
+        <div class="col-md-9">
+            <RadzenSwitch @bind-Value="model.IsActive" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-5">
+            @if (groupType == (byte)GroupTypes.Customer)
+            {
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                           @bind-Value=@selectedValues Multiple="true" Data=@allCustomers
+                           Placeholder="search customers..."
+                           TextProperty="CustomerName" ValueProperty="CustomerId"
+                           Style="height:200px" Class="w-100" />
+            }
+            else
+            {
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                           @bind-Value=@selectedValues Multiple="true" Data=@allRuns
+                           Placeholder="Search delivery runs..."
+                           TextProperty="RunNo" ValueProperty="Id"
+                           Style="height:200px" Class="w-100" />
+            }
+
+        </div>
+        <div class="col-md-2 d-tbl my-2">
+            <div class="tbl-cell">
+                <RadzenButton Icon="keyboard_double_arrow_right" class="w-100 mb-2" ButtonStyle="ButtonStyle.Primary" Click="SelectValues" Disabled="@(selectedValues == null || selectedValues.Count() == 0)" />
+                <RadzenButton Icon="keyboard_double_arrow_left" class="w-100" ButtonStyle="ButtonStyle.Primary" Click="RemoveValues" Disabled="@(removedValues == null ||  removedValues.Count() == 0)" />
+            </div>
+        </div>
+        <div class="col-md-5">
+            @if (groupType == (byte)GroupTypes.Customer)
+            {
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                           @bind-Value=@removedValues Multiple="true" Data=@selectedCustomers
+                           Placeholder="Search customers..."
+                           TextProperty="CustomerName" ValueProperty="CustomerId"
+                           Style="height:200px" Class="w-100" />
+            }
+            else
+            {
+                <RadzenListBox AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                           @bind-Value=@removedValues Multiple="true" Data=@selectedRuns
+                           Placeholder="Search delivery runs..."
+                           TextProperty="RunNo" ValueProperty="Id"
+                           Style="height:200px" Class="w-100" />
+            }
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-lg-6"></div>
+        <div class="col-lg-2">
+            <RadzenButton Visible="@(selectedGroup > 0)" class="w-100 mb-2" Text='Delete' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Danger" Click="DeleteGroup" />
+        </div>
+        <div class="col-lg-2">
+            <RadzenButton class="w-100 mb-2" Text='@(model.Id > 0 ? "Update Group" : "Save Group")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+        </div>
+        <div class="col-lg-2">
+            <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _dialog.Close())" />
+        </div>
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    GroupsBO model = new();
+    IEnumerable<GroupsBO> allGroups;
+
+    [Parameter]
+    public byte GroupScopeId { get; set; }
+
+    long selectedGroup = 0;
+
+    int groupType = 1;
+    IEnumerable<long> selectedValues;
+    IEnumerable<long> removedValues;
+
+    IEnumerable<CustomerBO> originalCustomers;
+    IEnumerable<DeliveryRunBO> originalRuns;
+
+    IEnumerable<CustomerBO> allCustomers;
+    IEnumerable<DeliveryRunBO> allRuns;
+
+    IEnumerable<CustomerBO> selectedCustomers;
+    IEnumerable<DeliveryRunBO> selectedRuns;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllGroups();
+        await GetAllCustomers();
+        await GetAllRuns();
+        originalCustomers = allCustomers.ToList().GetClone();
+        originalRuns = allRuns.ToList().GetClone();
+    }
+
+    async Task GetAllGroups()
+    {
+        allGroups = await _http.GetAllRecords<IEnumerable<GroupsBO>>($"/Group/GetAllGroups?scopeId={GroupScopeId}&companyId={_state.CompanyId}");
+    }
+
+    async Task GetAllCustomers()
+    {
+        allCustomers = await _http.GetAllRecords<IEnumerable<CustomerBO>>($"/customer/GetAllCustomers?companyId={_state.CompanyId}");
+    }
+
+    async Task GetAllRuns()
+    {
+        allRuns = await _http.GetAllRecords<IEnumerable<DeliveryRunBO>>($"/common/GetDeliveryRuns?companyId={_state.CompanyId}");
+    }
+
+    async Task OnTypeChange(int value)
+    {
+        selectedValues = null;
+        removedValues = null;
+        selectedCustomers = null;
+        selectedRuns = null;
+        allCustomers = originalCustomers;
+        allRuns = originalRuns;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnGroupChange(object value)
+    {
+        var groupId = (long)value;
+
+        if (groupId > 0)
+        {
+            model = allGroups.FirstOrDefault(x => x.Id == groupId);
+            groupType = model.GroupTypeId;
+            if (model.ReferemceIds.Count() > 0)
+            {
+                if (model.GroupTypeId == (byte)GroupTypes.Customer)
+                {
+                    selectedCustomers = originalCustomers.Where(x => model.ReferemceIds.Contains(x.CustomerId));
+                    var remaining = originalCustomers.Where(x => !model.ReferemceIds.Contains(x.CustomerId));
+                    allCustomers = remaining;
+                }
+                else
+                {
+                    selectedRuns = originalRuns.Where(x => model.ReferemceIds.Contains(x.Id));
+                    var remaining = originalRuns.Where(x => !model.ReferemceIds.Contains(x.Id));
+                    allRuns = remaining;
+                }
+            }
+        }
+        else
+        {
+            ClearItems();
+            allCustomers = originalCustomers;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SelectValues()
+    {
+        if (selectedValues.Count() > 0)
+        {
+            if (groupType == (byte)GroupTypes.Customer)
+            {
+                SelectCustomers();
+            }
+            else
+            {
+                SelectDeliveryRuns();
+            }
+        }
+        selectedValues = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task RemoveValues()
+    {
+        if (removedValues.Count() > 0)
+        {
+            if (groupType == (byte)GroupTypes.Customer)
+            {
+                RemoveCustomers();
+            }
+            else
+            {
+                RemoveRuns();
+            }
+        }
+        removedValues = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void SelectCustomers()
+    {
+        var selected = originalCustomers.ToList().Where(x => selectedValues.Contains(x.CustomerId));
+        var custs = allCustomers.ToList();
+        custs.RemoveAll(x => selectedValues.Contains(x.CustomerId));
+        allCustomers = custs;
+
+        if (selectedCustomers != null && selectedCustomers.Count() > 0)
+        {
+            var prev = selectedCustomers.ToList();
+            prev.AddRange(selected);
+            selectedCustomers = prev;
+        }
+        else
+        {
+            selectedCustomers = selected.ToList();
+        }
+    }
+
+    void SelectDeliveryRuns()
+    {
+        var selected = originalRuns.ToList().Where(x => selectedValues.Contains(x.Id));
+        var runs = allRuns.ToList();
+        runs.RemoveAll(x => selectedValues.Contains(x.Id));
+        allRuns = runs;
+
+        if (selectedRuns != null && selectedRuns.Count() > 0)
+        {
+            var prev = selectedRuns.ToList();
+            prev.AddRange(selected);
+            selectedRuns = prev;
+        }
+        else
+        {
+            selectedRuns = selected.ToList();
+        }
+    }
+
+    void RemoveCustomers()
+    {
+        var res = selectedCustomers.ToList().Where(x => removedValues.Contains(x.CustomerId));
+        var custs = selectedCustomers.ToList();
+        custs.RemoveAll(x => removedValues.Contains(x.CustomerId));
+        selectedCustomers = custs;
+
+        var mainList = res.ToList();
+        var existingList = allCustomers.ToList();
+        existingList.AddRange(mainList);
+
+        allCustomers = existingList;
+    }
+
+    void RemoveRuns()
+    {
+        var res = selectedRuns.ToList().Where(x => removedValues.Contains(x.Id));
+        var runs = selectedRuns.ToList();
+        runs.RemoveAll(x => removedValues.Contains(x.Id));
+        selectedRuns = runs;
+
+        var mainList = res.ToList();
+        var existingList = allRuns.ToList();
+        existingList.AddRange(mainList);
+
+        allRuns = existingList;
+    }
+
+    async Task AddEditGroup()
+    {
+        var existingName = allGroups.Count(x => x.Name.ToLower() == model.Name.ToLower());
+        if (existingName > 0 && model.Id == 0)
+        {
+            notification.Severity = NotificationSeverity.Warning;
+            notification.Summary = "Group name already exists. Please choose a different name.";
+            _notify.Notify(notification);
+            return;
+        }
+
+        if (selectedCustomers == null && selectedRuns == null)
+        {
+            notification.Severity = NotificationSeverity.Warning;
+            notification.Summary = "Select customers or runs to be added to a group before saving";
+            _notify.Notify(notification);
+            return;
+        }
+
+        model.Id = selectedGroup;
+
+        if (groupType == (byte)GroupTypes.Customer)
+        {
+            model.ReferemceIds = selectedCustomers.Select(s => s.CustomerId).ToList();
+        }
+        else
+        {
+            model.ReferemceIds = selectedRuns.Select(s => s.Id).ToList();
+        }
+
+        model.CompanyId = _state.CompanyId;
+        model.GroupTypeId = (byte)groupType;
+        model.GroupScopeId = GroupScopeId;
+
+        if(model.Id > 0)
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+
+        var res = await _http.PostRequest<BaseResponseBO>($"/Group/AddEditGroups", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            _dialog.Close();
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteGroup()
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete Group",
+                   new ConfirmOptions()
+                       {
+                           OkButtonText = "Yes",
+                           CancelButtonText = "No"
+                       });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/Group/DeleteGroup", selectedGroup);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                ClearItems();
+                await GetAllGroups();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            notification.Summary = response.Message;
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    void ClearItems()
+    {
+        model = new GroupsBO() { GroupScopeId = (byte)GroupScopes.Message, GroupTypeId = 1 };
+        selectedCustomers = null;
+        selectedRuns = null;
+        selectedValues = null;
+        removedValues = null;
+        allCustomers = originalCustomers;
+        allRuns = originalRuns;
+        selectedGroup = 0;
+        groupType = (byte)GroupTypes.Customer;
+    }
+}

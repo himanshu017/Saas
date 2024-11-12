@@ -1,0 +1,245 @@
+﻿@page "/Sliders"
+
+<PageHeader Title="Sliders" />
+<Loading @ref="loading" />
+@inject IStateService _state
+@if (listing)
+{
+    <RadzenButton Text="Add" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="@AddNew" class="mb-2" />
+    <RadzenDataGrid TItem="CompanySlidersBO" Data="@allSliders">
+        <Columns>
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Title="Image">
+                <Template Context="row">
+                    <RadzenImage Path="@row.SliderImagesList.ToList()[0].ImageDataUrl" height="60" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Property="Title" Title="Title" />
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Property="Summary" Title="SUmmary">
+                <Template Context="row">
+                    <p>@row.Summary</p>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Property="Url" Title="Link">
+                <Template Context="row">
+                    <a href="@row.Url" target="_blank">@row.Url</a>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Property="IsActive" Title="Active" Width="100px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CompanySlidersBO" Title="" Width="100px">
+                <Template Context="row">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="edit" Click="@(() => EditMode(row))" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Click="@(() => DeleteSlider(row))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <RadzenCard>
+        <EditForm Model="@model" OnValidSubmit="AddEdit">
+            <DataAnnotationsValidator />
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Title" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextBox @bind-Value="model.Title" class="form-control" MaxLength="100" />
+                    <ValidationMessage For="() => model.Title" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Image" />
+                </div>
+                <div class="col-md-9">
+                    <InputFile OnChange="OnInputFileChange" accept="image/png, image/gif, image/jpeg" class="form-control" />
+
+                    @if (list.Count > 0)
+                    {
+                        <div class="card mt-2">
+                            <div class="card-body">
+                                @foreach (var file in list)
+                                {
+                                    <img class="rounded m-1" @key="file.Name" src="@file.ImageDataUrl" height="60" />
+                                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Click="@(args => RemoveImage(file))" />
+                                }
+                            </div>
+                        </div>
+                    }
+                    <ValidationMessage For="() => model.Image" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Description" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextArea @bind-Value="model.Summary" class="form-control" MaxLength="500" />
+                    <ValidationMessage For="() => model.Summary" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Link" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextBox @bind-Value="model.Url" class="form-control" MaxLength="200" />
+                    <ValidationMessage For="() => model.Url" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Active" />
+                </div>
+                <div class="col-md-8">
+                    <RadzenSwitch @bind-Value="model.IsActive" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-lg-8"></div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='@(model.Id == 0 ? "Save Slider":"Update Slider")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+                </div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => listing = true)" />
+                </div>
+            </div>
+        </EditForm>
+    </RadzenCard>
+}
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    Loading loading;
+    CompanySlidersBO model = new();
+    IEnumerable<CompanySlidersBO> allSliders;
+    bool listing = true;
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile> selectedFiles;
+    List<FileViewModel> list = new List<FileViewModel>();
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetAllSliders();
+    }
+
+    async Task GetAllSliders()
+    {
+        allSliders = await _http.GetAllRecords<IEnumerable<CompanySlidersBO>>($"/Common/GetCompanySliders?companyId={_state.CompanyId}&d={_state.DomainName}");
+    }
+
+    async void AddNew()
+    {
+        listing = false;
+        model = new();
+        list = new List<FileViewModel>();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditMode(CompanySlidersBO row)
+    {
+        model = (CompanySlidersBO)row.Clone();
+        listing = false;
+        list = model.SliderImagesList.ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEdit()
+    {
+        loading.ShowLoading();
+
+        if (model.Id > 0)
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+        model.CompanyId = _state.CompanyId;
+
+        model.SliderImagesList = list;
+        model.DomainName = _state.DomainName;
+        var res = await _http.PostRequest<BaseResponseBO>("/Common/AddUpdateCompanysliders", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            await GetAllSliders();
+            listing = true;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+        loading.StopLoading();
+    }
+
+    async Task DeleteSlider(CompanySlidersBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete slider info",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/common/DeleteCompanySliders", row.Id);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                await GetAllSliders();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            notification.Summary = response.Message;
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        var format = "image/png";
+        //var resizedImageFile = await imageFile.RequestImageFileAsync(format, 100, 100);
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream(1024000).ReadAsync(buffer);
+        var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+
+        var filename = $"{Guid.NewGuid().ToString("N").ToUpper()}{Path.GetExtension(file.Name)}";
+        list.Add(new FileViewModel
+            {
+                Content = buffer,
+                ImageDataUrl = imageDataUrl,
+                ContentType = file.ContentType,
+                Name = filename,
+                Size = file.Size,
+            });
+        model.Image = filename;
+
+        this.StateHasChanged();
+    }
+
+    private void RemoveImage(FileViewModel file)
+    {
+        list.Remove(file);
+    }
+}

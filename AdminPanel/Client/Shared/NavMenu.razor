@@ -1,0 +1,93 @@
+﻿@inject NavigationManager _nav
+@inject IStateService _state
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a href="/Dashboard"> <img src="/Images/logo-white.png" alt="logo" height="45" width="100%"></a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <RadzenPanelMenu Visible="@(_state.CompanyId > 0)" Multiple="false">
+            <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="Dashboard">
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Product" Icon="qr_code">
+                <RadzenPanelMenuItem Text="Filters/Categories" Path="Admin/ManageCategories" Icon="list"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Product" Path="Products" Icon="edit_note"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Product Attributes" Path="ProductAttributes" Icon="done_all" Visible="@(_state.CompanyConfig?.IsAttributeEnabled ?? false)" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Company Specials" Path="Specials" Icon="stars"></RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Customer" Icon="contacts">
+                <RadzenPanelMenuItem Text="Manage Customers" Path="Customers" Icon="copyright"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Manage Salesreps" Path="Salesreps" Icon="assignment_ind"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="New Requests" Path="" Icon="person_add">
+                    <Template>
+                        <span> New Requests <RadzenBadge BadgeStyle="BadgeStyle.Warning" IsPill="true" Text="2" /> </span>
+                    </Template>
+                </RadzenPanelMenuItem>
+
+            </RadzenPanelMenuItem>
+
+            <RadzenPanelMenuItem Text="Orders" Icon="dvr">
+                <RadzenPanelMenuItem Text="Cart Settings" Path="CartSettings" Icon="app_settings_alt"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="View Orders" Path="Orders" Icon="list"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Add / Edit" Path="" Icon="edit_note"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Cart Defaults" Path="" Icon="tune"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Settings" Icon="settings">
+                <RadzenPanelMenuItem Text="Delivery Runs" Path="DeliveryRuns" Icon="local_shipping"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Delivery Cutoffs" Path="Cutoff" Icon="schedule"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Promocodes" Path="Promocode" Icon="local_offer"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Delivery Areas" Path="" Icon="map"></RadzenPanelMenuItem>
+                @*  <RadzenPanelMenuItem Text="Data Upload" Path="" Icon="cloud_upload"></RadzenPanelMenuItem>*@
+                <RadzenPanelMenuItem Text="Import Data" Path="Import" Icon="list"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Web Settings" Icon="admin_panel_settings">
+                <RadzenPanelMenuItem Text="Global Texts" Path="GlobalCompanyTexts" Icon="public"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Links" Path="Links" Icon="link"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Messages" Path="Messages" Icon="mail"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Targeted Marketing" Path="Marketing" Icon="store"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Sliders" Path="Sliders" Icon="slideshow"></RadzenPanelMenuItem>
+                <RadzenPanelMenuItem Text="Banners" Path="" Icon="ad_units"></RadzenPanelMenuItem>
+            </RadzenPanelMenuItem>
+        </RadzenPanelMenu>
+    </nav>
+</div>
+
+
+
+@code {
+    private bool collapseNavMenu = true;
+    long companyId;
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _state.OnCompanySelect += SetCompanyId;
+
+        await base.OnInitializedAsync();
+        companyId = _state.CompanyId;
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    void SetCompanyId(long compId)
+    {
+        companyId = compId;
+        StateHasChanged();
+        _nav.NavigateTo("Dashboard");
+    }
+
+    public void Dispose()
+    {
+        _state.OnCompanySelect -= SetCompanyId;
+    }
+}

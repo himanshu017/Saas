@@ -1,0 +1,220 @@
+﻿@page "/Customers"
+
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+@inject DialogService dialogService
+@inject NotificationService _notify
+@inject IStateService _state
+@inject IHttpService _http
+
+<PageHeader Title="All Customers">
+    <ChildContent>
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="@(() => ManageCustomer(new CustomerBO()))">Add New Customer</button>
+    </ChildContent>
+</PageHeader>
+<Loading @ref="loading" />
+
+<div class="row d-flex my-3">
+    <div class="col-3">
+        <RadzenTextBox @bind-Value="model.SearchString" class="w-100" Placeholder="Search by Customer Name, Alphacode, Email...." />
+    </div>
+    <div class="col-2">
+        <RadzenCheckBox Name="chkActive" TValue="bool" @bind-Value="model.Active" />
+        <RadzenLabel Text="@(model.Active ? "Active" : "In-Active")" Component="chkActive" Style="margin-left: 8px; vertical-align: middle;" />
+    </div>
+    <div class="col-2">
+        <RadzenCheckBox Name="chkHold" TValue="bool" @bind-Value="model.OnHold" />
+        <RadzenLabel Text="@(model.OnHold ? "On Hold" : "Not On Hold")" Component="chkHold" Style="margin-left: 8px; vertical-align: middle;" />
+    </div>
+    <div class="col-2 text-end">
+        <RadzenButton Text="Search" Icon="search" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="OnSearch" />
+    </div>
+</div>
+
+<RadzenDataGrid @ref="grid" Data="@allCustomers" AllowSorting="true"
+                TItem="CustomerBO" ExpandMode="DataGridExpandMode.Single" Responsive="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="CustomerBO" Property="AlphaCode" Title="Code" Width="90px" Sortable="true" />
+        <RadzenDataGridColumn TItem="CustomerBO" Property="CustomerName" Title="Name" Sortable="true" />
+        <RadzenDataGridColumn TItem="CustomerBO" Property="ContactName" Title="Contact" Sortable="false" />
+        <RadzenDataGridColumn TItem="CustomerBO" Property="Email" Title="Email" Sortable="false" />
+        <RadzenDataGridColumn TItem="CustomerBO" Property="Phone1" Title="Phone" Width="110px" Sortable="false" />
+        <RadzenDataGridColumn TItem="CustomerBO" Property="IsDebtorOnHold" Title="On Hold" Width="90px" CssClass="text-center" Sortable="false">
+            <Template Context="row">
+                <RadzenCheckBox @bind-Value="row.IsDebtorOnHold" Style="margin: 0 auto;" TValue="bool" Change="@(args => UpdateCustomer(args, row, nameof(row.IsDebtorOnHold)))" />
+                <RadzenBadge BadgeStyle="@(row.IsDebtorOnHold ? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@(row.IsDebtorOnHold ? "Yes" : "No")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CustomerBO" Property="IsActive" Title="Status" Width="90px" CssClass="text-center" Sortable="false">
+            <Template Context="row">
+                <RadzenCheckBox @bind-Value="row.IsActive" Style="margin: 0 auto;" TValue="bool" Change="@(args => UpdateCustomer(args, row, nameof(row.IsActive)))" />
+                <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="CustomerBO" Width="110px" Sortable="false">
+            <Template Context="row">
+                <RadzenButton Icon="people" title="Manage customer" Click="@(() => ManageUsers(row))" />
+                <RadzenButton Icon="edit" title="Edit customer" Click="@(() => ManageCustomer(row))" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+    <Template Context="row">
+        <div class="row">
+            <div class="col-lg-6">
+                <dl class="row">
+                    <DescTerm Label="Phone2" LabelColumns="4">
+                        <span>@row.Phone2</span>
+                    </DescTerm>
+                    <DescTerm Label="Fax" LabelColumns="4">
+                        <span>@row.Fax</span>
+                    </DescTerm>
+                    <DescTerm Label="Salesman Code" LabelColumns="4">
+                        <span>@row.SalesmanCode</span>
+                    </DescTerm>
+                </dl>
+            </div>
+            <div class="col-lg-6">
+                <dl class="row">
+                    <DescTerm Label="Credit Limit" LabelColumns="4">
+                        <span>@($"{row.CreditLimit:c2}")</span>
+                    </DescTerm>
+                    <DescTerm Label="Balance Total" LabelColumns="4">
+                        <span>@($"{row.BalanceTotal:c2}")</span>
+                    </DescTerm>
+                </dl>
+            </div>
+        </div>
+    </Template>
+</RadzenDataGrid>
+
+<RadzenPager class="px-0" PageSizeOptions="@pageSizeOptions" ShowPagingSummary="true"
+             PagingSummaryFormat="@pagingSummaryFormat" Count="totalRecords" PageSize="model.PageSize"
+             PageNumbersCount="5" PageChanged="@PageChanged" PageSizeChanged="@PageSizeChanged" />
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    RadzenDataGrid<CustomerBO>? grid;
+    Loading loading;
+    IEnumerable<CustomerBO> allCustomers;
+
+    GetCustomerModel model = new();
+    int totalRecords = 0;
+    string pagingSummaryFormat = "Displaying page {0} of {1} (total {2} records)";
+    List<int> pageSizeOptions = new List<int>() { 25, 50, 100, 200 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 25;
+        model.PageNumber = 0;
+        await Task.Delay(50);
+        await GetAllCustomers($"PageSize={model.PageSize}");
+    }
+
+    async Task GetAllCustomers(string query = "")
+    {
+        loading.ShowLoading();
+
+        allCustomers = await _http.GetAllRecords<IEnumerable<CustomerBO>>($"Customer/GetAllCustomers?CompanyId={model.CompanyId}&{query}");
+        if (allCustomers.Count() > 0)
+        {
+            totalRecords = allCustomers.ToList()[0]?.TotalRecords ?? 0;
+        }
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+    async Task PageChanged(PagerEventArgs args)
+    {
+        model.PageSize = args.Top;
+        model.PageNumber = args.PageIndex;
+
+        await GetAllCustomers($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task PageSizeChanged(int size)
+    {
+        model.PageSize = size;
+        model.PageNumber = 1;
+        await GetAllCustomers($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ManageUsers(CustomerBO row)
+    {
+        await dialogService.OpenAsync<ManageCustomer>($"Manage Customer",
+               new Dictionary<string, object>() { { "CustomerId", row.CustomerId } },
+               new DialogOptions()
+                   {
+                       Width = "65%",
+                       Height = "600px"
+                   });
+    }
+
+    async Task UpdateCustomer(bool? value, CustomerBO row, string colName)
+    {
+        var updateBitModel = new UpdateBitBO()
+            {
+                Id = row.CustomerId,
+                ModifiedBy = _state.UserId,
+                ColName = colName,
+                Value = (value ?? false)
+            };
+
+        var res = await _http.PostRequest<bool>("/customer/UpdateBitField", updateBitModel);
+        if (res)
+        {
+            _notifyS.SuccessMsg("", "Customer updated successfully");
+        }
+        else
+        {
+            _notifyS.WarningMsg("", "Error updating customer. Contact admin for more details.");
+        }
+    }
+
+    async Task ManageCustomer(CustomerBO row)
+    {
+        IEnumerable<CustomerBO> customerList;
+        if (row.CustomerId > 0)
+        {
+            if (row.ContactName.Split(' ').Count() > 1)
+            {
+                // set the value for first and last nane since they were used for contact name
+                row.FirstName = row.ContactName.Split(' ')[0];
+                row.LastName = row.ContactName.Split(' ')[1];
+            }
+            else
+            {
+                row.FirstName = row.ContactName ?? "";
+            }
+            customerList = allCustomers.Where(c => c.CustomerId != row.CustomerId);
+        }
+        else
+        {
+            customerList = allCustomers;
+        }
+
+        var res = await dialogService.OpenAsync<AddNewCustomer>($"Manage Customer",
+                 new Dictionary<string, object>() {
+                                        { "Model", row.Clone() },
+                                        { "Customers", customerList } },
+                 new DialogOptions()
+                     {
+                         Width = "65%",
+                     });
+
+        if (res != null && res.IsSuccess)
+        {
+            await GetAllCustomers($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        }
+    }
+
+    async Task OnSearch()
+    {
+        model.PageNumber = 1;
+        await GetAllCustomers($"PageSize={model.PageSize}&Active={model.Active}&OnHold={model.OnHold}&SearchString={model.SearchString}");
+        await InvokeAsync(StateHasChanged);
+    }
+}

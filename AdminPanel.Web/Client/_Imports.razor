@@ -1,0 +1,30 @@
+﻿@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using Microsoft.JSInterop
+@using AdminPanel.Web.Client
+@using AdminPanel.Web.Client.Shared
+@using AdminPanel.Web.Client.Components
+@using AdminPanel.Web.Client.Components.Global
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.Authorization
+@using AdminPanel.Web.Client.Pages.Account
+@using Radzen
+@using Radzen.Blazor
+@using AdminPanel.Shared
+@using AdminPanel.Shared.BO
+@using AdminPanel.Web.Client.Services
+@using AdminPanel.Shared.BO.CompanyAdmin
+@using AdminPanel.Shared.BO.WebApp;
+
+// inject the service globally to be accessed by all the pages and components
+@inject LoadingService loading
+@inject IStateService _state
+@inject FavoriteListService _favListService
+@inject QuickViewService quickView
+@inject INotify _notify

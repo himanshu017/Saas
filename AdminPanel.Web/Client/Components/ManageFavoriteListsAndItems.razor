@@ -1,0 +1,182 @@
+﻿@inject IHttpService _http
+@inject IStateService _state
+@inject DialogService _dialog
+
+@if (showModal)
+{
+    <div class="modal fade show" tabindex="-1" role="dialog" style="display:block; overflow-y: auto;z-index:1100">
+        <div class="modal-dialog modal-sm bg-white" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Favorite Lists</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="form-group">
+                            <RadzenRadioButtonList @bind-Value=@listId TValue="long" Orientation="Orientation.Vertical" Change=@(args => OnChange(args))
+                                               Data="@favLists" TextProperty="Name" ValueProperty="Id" />
+                            @if (listId == 0)
+                            {
+                                <span class="text-danger">Please choose a list to add product</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <RadzenButton Text="Add to List" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Click="AddItemToList" />
+                    <RadzenButton Text="Cancel" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => _favListService.Close())" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop fade show" style="z-index:1099"></div>
+}
+
+<div class="row">
+</div>
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    GetFavLists listModel = new();
+    long listId = 0;
+    IEnumerable<FavoriteListBO> favLists = Enumerable.Empty<FavoriteListBO>();
+    ManageFavListItemBO model = new();
+
+    long ProductId = 0;
+
+    bool showModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _favListService.OnAddToList += OpenList;
+        _favListService.OnClose += Close;
+        _favListService.OnReset += Reset;
+        _favListService.OnDelete += DeleteItemFromList;
+
+        model.UserId = _state.UserId;
+        model.CustomerId = _state.CustomerId;
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task GetFavoriteLists()
+    {
+        loading.Start();
+        listModel.CompanyId = _state.CompanyId;
+        listModel.CustomerId = _state.CustomerId;
+        listModel.UserId = _state.UserId;
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<FavoriteListBO>>>($"api/Product/GetFavoriteLists{Extensions.ConvertToQueryString(listModel)}", cts);
+
+        if (response.IsSuccess)
+        {
+            favLists = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+        loading.Stop();
+    }
+
+    void OnChange(long? value)
+
+    {
+        listId = (long)value;
+        Console.WriteLine($"Value changed to {value}");
+    }
+
+    async void OpenList(long productId)
+    {
+        if (favLists == null || favLists.Count() == 0)
+        {
+            await GetFavoriteLists();
+        }
+        ProductId = productId;
+        showModal = true;
+        StateHasChanged();
+    }
+
+    public void Close()
+    {
+        ProductId = 0;
+        listId = 0;
+        showModal = false;
+        StateHasChanged();
+    }
+
+    public void Reset()
+    {
+        favLists = null;
+    }
+
+    async Task AddItemToList()
+    {
+        try
+        {
+            if (listId == 0)
+            {
+                return;
+            }
+            loading.Start();
+            model.ProductId = ProductId;
+            model.ListId = listId;
+            model.IsDelete = false;
+            var result = await _http.PostRequest<GenericResponse<bool>>("api/Product/AddDeleteFavlistItem", model, cts);
+
+            if (result.IsSuccess)
+            {
+                _notify.SuccessMsg(result.Message);
+            }else{
+                _notify.WarningMsg(result.Message);
+            }
+            Close();
+        }
+        finally
+        {
+            loading.Stop();
+        }
+    }
+
+    async Task<bool> DeleteItemFromList(long productId, long listId)
+    {
+        bool res = false;
+        try
+        {
+            if (await _notify.ConfirmDialog("Are you sure?","Delete item from list"))
+            {
+                loading.Start();
+                model.ProductId = productId;
+                model.ListId = listId;
+                model.IsDelete = true;
+                var result = await _http.PostRequest<GenericResponse<bool>>("api/Product/AddDeleteFavlistItem", model, cts);
+
+                if (result.IsSuccess)
+                {
+                    Console.WriteLine(result.Message);
+                    res = true;
+                }
+            }
+
+            return res;
+        }
+        catch (Exception)
+        {
+            return res;
+        }
+        finally
+        {
+            loading.Stop();
+        }
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+        _favListService.OnAddToList -= OpenList;
+        _favListService.OnClose -= Close;
+        _favListService.OnDelete -= DeleteItemFromList;
+    }
+
+}

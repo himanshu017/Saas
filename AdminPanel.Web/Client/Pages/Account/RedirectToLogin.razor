@@ -1,0 +1,25 @@
+﻿@inject NavigationManager _navigationManager
+
+@*<h2>You are not authorized to view this page. Redirecting to Login....</h2>*@
+
+@code {
+    [CascadingParameter]
+    public Task<AuthenticationState> StateAuthenticate { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await StateAuthenticate;
+        if (authenticationState?.User?.Identity is null || !authenticationState.User.Identity.IsAuthenticated)
+        {
+            var returnUri = _navigationManager.ToBaseRelativePath(_navigationManager.Uri);
+             if (string.IsNullOrWhiteSpace(returnUri))
+             {
+                 _navigationManager.NavigateTo("/Login", true);
+             }
+             else
+             {
+                 _navigationManager.NavigateTo($"/Login?returnUrl={returnUri}", true);
+             }
+        }
+    }
+}

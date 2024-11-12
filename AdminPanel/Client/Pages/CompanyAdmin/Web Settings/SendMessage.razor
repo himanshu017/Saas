@@ -1,0 +1,147 @@
+﻿@page "/Messages"
+
+<PageHeader Title="Messages" />
+<Loading @ref="loading" />
+
+<RadzenCard>
+    <EditForm Model="@model" OnValidSubmit="BroadcastMessage">
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Send To" />
+            </div>
+            <div class="col-md-9">
+                <RadzenRadioButtonList @bind-Value=@value TValue="int">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Group" Value="1" />
+                        <RadzenRadioButtonListItem Text="Customer" Value="2" />
+                    </Items>
+                </RadzenRadioButtonList>
+            </div>
+        </div>
+
+        @if (value == 1)
+        {
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Group" />
+                </div>
+                <div class="col-md-7">
+                    <RadzenDropDown @bind-Value="model.GroupId" Data="@allGroups" TextProperty="Name" ValueProperty="Id" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <RadzenButton Text="Manage" class="w-100" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@ManageGroup" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Customer" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenButton Text="Choose Customers" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(true))" />
+                    <span>@(model.CustomerIds?.Count() > 0 ? $"{model.CustomerIds?.Count()} Selected" : "0 Selected")</span>
+                </div>
+            </div>
+        }
+
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Send SMS" />
+            </div>
+            <div class="col-md-9">
+                <RadzenSwitch @bind-Value="model.IsSms" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Message" />
+            </div>
+            <div class="col-md-9">
+                <RadzenTextArea @bind-Value="model.MessageText" class="form-control" MaxLength="250" />
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-lg-10"></div>
+            <div class="col-lg-2">
+                <RadzenButton class="w-100" Text='Send Message' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+            </div>
+        </div>
+    </EditForm>
+</RadzenCard>
+
+@code {
+    Loading loading;
+    MessageBO model = new();
+    IEnumerable<GroupsBO> allGroups;
+    IEnumerable<CustomerBO> allCustomers;
+    int value = 1;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllCustomers();
+        await GetAllGroups();
+    }
+
+    async Task GetAllCustomers()
+    {
+        allCustomers = await _http.GetAllRecords<IEnumerable<CustomerBO>>($"/customer/GetAllCustomers?companyId={_state.CompanyId}");
+    }
+
+    async Task GetAllGroups()
+    {
+        allGroups = await _http.GetAllRecords<IEnumerable<GroupsBO>>($"/Group/GetAllGroups?scopeId={(byte)GroupScopes.Message}&companyId={_state.CompanyId}");
+    }
+
+    async Task BroadcastMessage()
+    {
+        model.CreatedBy = _state.UserId;
+        model.CreatedOn = DateTime.UtcNow;
+        model.CompanyId = _state.CompanyId;
+
+        var res = await _http.PostRequest<BaseResponseBO>($"/Message/SendMessage", model);
+
+        if (res.IsSuccess)
+        {
+            model = new();
+        }
+        else
+        {
+            Console.WriteLine(res.Message);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ManageGroup()
+    {
+        var res = await _dialog.OpenAsync<ManageGroups>($"Manage Groups",
+                 new Dictionary<string, object>() { { "GroupScopeId", (byte)GroupScopes.Message } },
+                 new DialogOptions()
+                     {
+                         Width = "75%",
+                         Height = "550px"
+                     });
+
+        await GetAllGroups();
+    }
+
+    async Task ShowMultiSelect(bool isCustomer)
+    {
+        var res = await _dialog.OpenAsync<MultiSelection>(isCustomer ? "Select Customers" : "Select Products",
+               new Dictionary<string, object>() { { "IsCustomer", isCustomer },
+                                                  { "PreviousSelection", model.CustomerIds } },
+           new DialogOptions()
+               {
+                   Width = "65%"
+               });
+
+        if (res != null)
+        {
+            model.CustomerIds = res;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+}

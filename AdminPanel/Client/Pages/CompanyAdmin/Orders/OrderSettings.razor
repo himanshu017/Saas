@@ -1,0 +1,158 @@
+﻿@page "/CartSettings"
+@using AdminPanel.Shared.BO.MasterAdmin
+@inject HttpClient _httpClient
+@inject IStateService _state
+@inject NotificationService _notify
+
+<PageHeader Title="Order Settings" />
+<Loading @ref="loading" />
+
+<RadzenCard>
+    <RadzenTemplateForm Data="@model" TItem="CompanyConfigBO" Submit="SaveSettings">
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-4">
+                <RadzenLabel Text="Minimum Cart Value" />
+            </div>
+            <div class="col-md-8">
+                <RadzenFormField Text="">
+                    <Start>
+                        @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="model.MinCartValue" TValue="decimal?" Format="f2" ShowUpDown="false" Min="0" class="w-100" />
+                    </ChildContent>
+                </RadzenFormField>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-4">
+                <RadzenLabel Text="Allow Order Below Minimum" />
+            </div>
+            <div class="col-md-8">
+                <RadzenCheckBox @bind-Value="model.AllowOrderBelowMin" TValue="bool" />
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-4">
+                <RadzenLabel Text="Minimum Cart Value For Free Delivery" />
+            </div>
+            <div class="col-md-8">
+                <RadzenFormField Text="">
+                    <Start>
+                        @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="model.MinCartValueForFreeDelivery" TValue="decimal?" Format="f2" ShowUpDown="false" Min="0" class="w-100" />
+                    </ChildContent>
+                </RadzenFormField>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-4">
+                <RadzenLabel Text="Freight Charges" />
+            </div>
+            <div class="col-md-8">
+                <RadzenFormField Text="">
+                    <Start>
+                        @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="model.FreightCharges" Name="FCharges" TValue="decimal?" Format="f2" ShowUpDown="false" Min="0" class="w-100" />
+                    </ChildContent>
+                </RadzenFormField>
+                @if (model.MinCartValueForFreeDelivery.HasValue && model.MinCartValueForFreeDelivery.Value > 0)
+                {
+                    <RadzenRequiredValidator Component="FCharges" Text="Freight is required if Min Cart Value For Free Delivery > 0" />
+                }
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-4">
+                <RadzenLabel Text="Non-Delivery Day Charges" />
+            </div>
+            <div class="col-md-8">
+                <RadzenFormField Text="">
+                    <Start>
+                        @Extensions.CurrencySymbol(_state.CurrencyInfo)
+                    </Start>
+                    <ChildContent>
+                        <RadzenNumeric @bind-Value="model.NonDeliveryDayCharges" TValue="decimal?" Format="f2" ShowUpDown="false" Min="0" class="w-100" />
+                    </ChildContent>
+                </RadzenFormField>
+            </div>
+        </div>
+        <div class="row justify-content-end">
+            <div class="col-md-8">
+                <RadzenButton ButtonStyle="ButtonStyle.Primary"  class="w-100" ButtonType="ButtonType.Submit" Text="Save" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+</RadzenCard>
+
+@code {
+    CompanyConfigSettingsBO configs = new();
+    CompanyConfigBO model = new();
+    Loading? loading;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetCompanyConfig();
+    }
+
+    async Task GetCompanyConfig()
+    {
+        configs = await _httpClient.GetFromJsonAsync<CompanyConfigSettingsBO>($"Company/GetCompanyConfiguration?companyId={_state.CompanyId}");
+
+        if (!string.IsNullOrEmpty(configs.ConfigSettings))
+        {
+            model = JsonConvert.DeserializeObject<CompanyConfigBO>(configs.ConfigSettings);
+        }
+        else
+        {
+            model = new();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SaveSettings()
+    {
+        loading.ShowLoading();
+        configs.CompanyId = _state.CompanyId;
+        configs.ConfigSettings = JsonConvert.SerializeObject(model);
+
+        if (configs.IsUpdate)
+        {
+            configs.ModifiedBy = _state.UserId;
+            configs.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            configs.CreatedBy = _state.UserId;
+            configs.CreatedOn = DateTime.UtcNow;
+        }
+        
+        var res = await _httpClient.PostAsJsonAsync($"Company/AddUpdateConfigSettings", configs);
+
+        if (res.IsSuccessStatusCode)
+        {
+            _notify.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Order settings updated!",
+                    Duration = 4000
+                });
+        }
+        else
+        {
+            _notify.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error updating Order settings!",
+                    Duration = 4000
+                });
+        }
+
+        loading.StopLoading();
+    }
+}

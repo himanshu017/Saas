@@ -1,0 +1,243 @@
+﻿@page "/cart"
+@inject NavigationManager _nav
+@inject IHttpService _http
+@inject DialogService _dialog
+
+<HeadContent>
+    <link rel="stylesheet" href="theme/css/checkout.css?v=@DateTime.Now.Ticks">
+    <style>
+        .rz-datepicker-calendar th {
+            color: @_state.SecondaryColor;
+        }
+
+        .rz-datepicker-calendar td .rz-state-active {
+            color: @_state.SecondaryColor !important;
+            background-color: @_state.PrimaryColor !important;
+        }
+
+            .rz-datepicker-calendar td .rz-state-active:hover {
+                color: @_state.SecondaryColor !important;
+                background-color: @_state.PrimaryColor !important;
+            }
+
+    </style>
+</HeadContent>
+
+<TitleBanner Title="Cart" />
+
+<!--=====================================
+            CHECKOUT PART START
+=======================================-->
+<section class="inner-section checkout-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="account-card">
+                    @if (cartItems == null || cartItems.Count() == 0)
+                    {
+                        <div class="account-title text-center">
+                            <h4>No Items in Cart!</h4>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="account-title">
+                            <h4>Your order</h4>
+                            <RadzenButton ButtonStyle="ButtonStyle.Danger" ButtonType="ButtonType.Button" Text="Delete Selected Items"
+                                          Visible=@(selectedItems != null && selectedItems.Count() > 0) Click="@(() => DeleteItems(0,true))" />
+                        </div>
+                        <div class="account-content">
+                            <div class="table-scroll">
+
+                                <RadzenDataGrid Style="max-height:500px;" @ref=grid TItem="ProductListBO" Data="@cartItems"
+                                                SelectionMode="DataGridSelectionMode.Multiple" @bind-Value=@selectedItems AllowRowSelectOnRowClick="false">
+                                    <Columns>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Width="40px" Sortable="false" Filterable="false">
+                                            <HeaderTemplate>
+                                                <RadzenCheckBox TriState="false" TValue="bool" Value="@(cartItems.Any(i => selectedItems != null && selectedItems.Contains(i)))"
+                                                                Change="@(args => selectedItems = args ? cartItems.ToList() : null)" />
+                                            </HeaderTemplate>
+                                            <Template Context="prod">
+                                                <RadzenCheckBox TriState="false" Value="@(selectedItems != null && selectedItems.Contains(prod))" TValue="bool"
+                                                                Change=@(args => grid.SelectRow(prod) ) />
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Title="Product" Sortable="false" Filterable="false" Width="100px" TextAlign="TextAlign.Center">
+                                            <Template Context="prod">
+                                                @if (prod.ProductImages.Count() > 0)
+                                                {
+                                                    <img src="@_state.ImagePath/ProductsImages/@_state.DomainName/@prod.ProductImages[0].ImageName" alt="@prod.Name" height="50">
+                                                }
+                                                else
+                                                {
+                                                    <img src="@_state.ImagePath/ProductsImages/no-image.png" alt="@prod.Name" height="50">
+                                                }
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Property="Name" Title="Name" TextAlign="TextAlign.Left" CssClass="text-start">
+                                            <Template Context="prod">
+                                                <span>@prod.Name</span>
+                                                @if (!string.IsNullOrEmpty(prod.AttributesDisplay))
+                                                {
+                                                    <span class="crt-cmmnt d-block">@((MarkupString)prod.AttributesDisplay)</span>
+                                                }
+                                                @if (prod.CommentId.HasValue)
+                                                {
+                                                    <span class="crt-cmmnt text-danger d-block">@prod.CommentDescription</span>
+                                                }
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Property="Price" Title="Price" Width="150px" TextAlign="TextAlign.Center">
+                                            <Template Context="prod">
+                                                @(((prod.Price + (prod.AttributePriceAdjustment ?? 0)) * (decimal)prod.CartQuantity).ToPrice(_state.CurrencyInfo))
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Property="UnitCode" Title="Unit" Width="120px" TextAlign="TextAlign.Center" />
+                                        <RadzenDataGridColumn TItem="ProductListBO" Property="CartQuantity" Title="Quantity" Width="120px" TextAlign="TextAlign.Center">
+                                            <Template Context="prod">
+                                                <div class="product-action" style="display:flex">
+                                                    <RadzenNumeric Min="1" TValue="double" @bind-Value="@prod.CartQuantity"
+                                                                   Change=@(args => OnChange(args, prod))
+                                                                   class="action-input w-70" ShowUpDown=true />
+                                                </div>
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        <RadzenDataGridColumn TItem="ProductListBO" Title="Actions" Width="170px" TextAlign="TextAlign.Center">
+                                            <Template Context="prod">
+                                                <div class="table-action">
+                                                    <a class="view" href="javascript:;" title="Add / Update Comment" @onclick="@(() => ManageComments(CommentTypes.Product, (prod.CommentId ?? 0), prod))"><i class="fas fa-comments"></i></a>
+                                                    <a class="view" href="/product/@prod.ProductId" title="Quick View"><i class="fas fa-eye"></i></a>
+                                                    <a class="trash" href="javascript:;" title="Remove Wishlist" @onclick=@(() => DeleteItems(prod.TempCartItemId))><i class="icofont-trash"></i></a>
+                                                </div>
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                    </Columns>
+                                </RadzenDataGrid>
+                            </div>
+                            <div class="d-flex justify-content-between mt-4">
+                                <div class="col-5">
+                                    <p>Add design for delivery comments or notes</p>
+                                </div>
+                                <div class="checkout-charge col-5">
+                                    <div class="chekout-coupon">
+                                        <form class="coupon-form">
+                                            <input type="text" placeholder="Enter your coupon code">
+                                            <button type="button"><span>apply</span></button>
+                                        </form>
+                                    </div>
+                                    <ul>
+                                        <li>
+                                            <span>Sub total</span>
+                                            <span>@(_state.CartCountBO.CartTotal.ToPrice(_state.CurrencyInfo))</span>
+                                        </li>
+                                        <li>
+                                            <span>delivery fee</span>
+                                            <span>@(orderModel.FreightCharge.ToPrice(_state.CurrencyInfo))</span>
+                                        </li>
+                                        <li>
+                                            <span>discount</span>
+                                            <span>@(_state.CartCountBO.DiscountAmount.ToPrice(_state.CurrencyInfo))</span>
+                                        </li>
+                                        <li>
+                                            <span>taxes</span>
+                                            <span>@((_state.CartCountBO.CartTotalWithTax - _state.CartCountBO.CartTotal).ToPrice(_state.CurrencyInfo))</span>
+                                        </li>
+                                        <li>
+                                            <span>Total<small>(Incl. VAT)</small></span>
+                                            <span>@((_state.CartCountBO.CartTotalWithTax + (orderModel.FreightCharge ?? 0) + (orderModel.NonDeliveryDayCharge ?? 0)).ToPrice(_state.CurrencyInfo))</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (cartItems != null && cartItems?.Count() > 0)
+            {
+                <div class="col-lg-12">
+                    <div class="account-card">
+                        <div class="account-title">
+                            <h4>delivery address</h4>
+                            <RadzenButton Text="Add Address" ButtonStyle="ButtonStyle.Primary" Click="@(() => AddUpdateAddress())"
+                                          Disabled="@(customerAddresses != null && customerAddresses.Count() == 3)" Visible="@(_state.ManagedFeatures?.IsAllowToAddAddress ?? false)" />
+                        </div>
+                        <div class="account-content">
+                            <div class="row">
+                                @if (customerAddresses != null && customerAddresses.Count() > 0)
+                                {
+                                    foreach (var addr in customerAddresses)
+                                    {
+                                        <div class="col-md-6 col-lg-4 alert fade show" @onclick="@(() => {selectedAddress = addr; orderModel.AddressId = addr.Id;})">
+                                            <div class="profile-card address @(addr.Id == selectedAddress?.Id ? "active":"")">
+                                                <h6>@addr.AddressTypeName</h6>
+                                                <p>@addr.FullAddress</p>
+                                                <ul class="user-action">
+                                                    <li><button class="edit icofont-edit" title="Edit This" @onclick="@(() => AddUpdateAddress(addr))"></button></li>
+                                                    <li><button class="trash icofont-ui-delete" title="Remove This" @onclick="@(() => DeleteAddress(addr))"></button></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <div class="account-card mb-0">
+                        <div class="checkout-check mt-0 mb-3">
+                            <RadzenCheckBox TValue="bool" Name="CheckoutCheck" class="mr-2" />
+                            <label for="CheckoutCheck">&nbsp; By making this purchase you agree to our <a href="javascript:;">Terms and Conditions</a>.</label>
+                        </div>
+                        <div class="checkout-proced">
+                            <a href="javascript:;" class="btn btn-inline" @onclick="ValidateOrderConditions">Place Order</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<GenericModal @ref="genModal" Title="Choose Delivery Date" Size="modal-md">
+    <Body>
+        <div class="site-calendar-demo-card">
+            <div class="text-center">
+                <RadzenDatePicker DateFormat="dd/MM/yyyy" TValue="DateTime?" Inline="true" @bind-Value="OrderDate"
+                                  Change="@(args => OnDateChange(args, "Calendar", "MM/dd/yyyy"))" DateRender="@DateRender" />
+            </div>
+
+            <div class="mt-4">
+                <ul class="text-left legend">
+                    @if (_state.ManagedFeatures.IsNonDeliveryDayOrdering)
+                    {
+                        <li class="mb-2 text-uppercase">
+                            <span class="lgd yellow"></span>
+                            Non-Delivery Days
+                        </li>
+                    }
+                    <li class="mb-2 text-uppercase">
+                        <span class="lgd avlb"></span>
+                        Available Dates
+                    </li>
+                    <li class="mb-2 text-uppercase">
+                        <span class="lgd disbld"></span>
+                        Not Available
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </Body>
+    <Footer>
+        <RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Text="Ok" Disabled="@(!OrderDate.HasValue)" Click="PlaceOrder" />
+        <RadzenButton ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Text="Cancel" Click="@(() => genModal.Close())" />
+    </Footer>
+</GenericModal>
+
+<!--=====================================
+            CHECKOUT PART END
+=======================================-->
+@code {
+
+}

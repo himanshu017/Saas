@@ -1,0 +1,209 @@
+﻿@page "/Search"
+@inject IHttpService _http
+@implements IDisposable
+@inject NavigationManager _nav
+@inject ISearchService _search
+@inject FavoriteListService _FavListService
+
+<TitleBanner Title="Search Results" />
+<!--=====================================
+            SHOP PART START
+=======================================-->
+<section class="inner-section shop-part">
+    <div class="container">
+        <div class="row content-reverse">
+            <div class="col-lg-3">
+                <FilterSidebar ProductModel="model" />
+            </div>
+            <div class="col-lg-9">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="top-filter">
+                            <div class="filter-show">
+                                <label class="filter-label">Show :</label>
+                                <RadzenDropDown @bind-Value="model.PageSize" TValue="int" Data="PageSizeSelection" class="bg-transparent" Change="@(() => SearchProduct())" />
+                            </div>
+                            <div class="filter-short">
+                                <label class="filter-label">Sort by :</label>
+                               <RadzenDropDown Data="@StaticHelpers.SearchPageSortOptions" TextProperty="Key" ValueProperty="Value"
+                                                @bind-Value="model.SortColumn" Change="@(() => SearchProduct())" />
+                               @* <select class="form-select filter-select">
+                                    <option value="Name asc">Name (A-Z)</option>
+                                    <option value="Name desc">Name (Z-A)</option>
+                                    <option value="Code asc">Code (A-Z)</option>
+                                    <option value="Code desc">Code (Z-A)</option>
+                                    <option value="CreatedOn desc">Most Recent</option>
+                                    <option value="IsRewardItem desc">Rewards Item</option>
+                                </select>*@
+                            </div>
+                            <div class="filter-action">
+                                <a href="javascript:;" title="Column View" @onclick="@(() => detailView = false)"><i class="fas fa-th"></i></a>
+                                <a href="javascript:;" title="Detail View" @onclick="@(() => detailView = true)"><i class="fas fa-th-list"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if (products != null && products.Count() > 0)
+                {
+                    <div class='@(detailView ? "row" : "row row-cols-2 row-cols-md-3 row-cols-lg-3 row-cols-xl-4")'>
+                        @if (products != null && products.Count() > 0)
+                        {
+                            @foreach (var prod in products)
+                            {
+                                <ProductDisplay Prod="prod" IsDetailView="@detailView" />
+                            }
+                        }
+
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="bottom-paginate d-block">
+                                @if (products != null && products.Count() > 0)
+                                {
+                                    <RadzenPager ShowPagingSummary="true"
+                                         PagingSummaryFormat="@pagingSummaryFormat"
+                                         HorizontalAlign="HorizontalAlign.Right"
+                                         Count="@totalRecords"
+                                         PageSize="@model.PageSize"
+                                         PageNumbersCount="5"
+                                         PageChanged="@PageChanged" />
+                                }
+
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-lg-12 text-center mt-5">
+                        <RadzenIcon Icon="hide_image" class="fa-5x" />
+                        <h3><strong>No Products Found</strong></h3>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+            SHOP PART END
+=======================================-->
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string val { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? type { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public long? id { get; set; }
+
+
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<ProductListBO> products;
+
+    GetProductListBO model = new();
+    int totalRecords = 0;
+    int totalPages = 0;
+    string pagingSummaryFormat = "Displaying page {0} of {1} (total {2} records)";
+
+    List<int> PageSizeSelection = new List<int>() { 12, 24, 36, 48, 60 };
+    bool detailView = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _search.SearchTextChanged += SearchTextChange;
+        _search.SetSearchModel += RefreshSearchResults;
+        await base.OnInitializedAsync();
+
+        model.SortColumn = "Name asc";
+        model.SearchString = val;
+        model.PageNumber = 0;
+        model.PageSize = 24;
+
+        await Task.Delay(200);
+
+        if (id != null && type != null)
+        {
+            if (type == "S")
+            {
+                model.SubCategoryIds.Add(id);
+            }
+            else
+            {
+                model.CategoryIds.Add(id);
+            }
+        }
+
+        await SearchProduct();
+    }
+
+    async void SearchTextChange(string val)
+    {
+        model.SearchString = val;
+        model.PageNumber = 0;
+        model.PageSize = 24;
+        await SearchProduct();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void RefreshSearchResults(GetProductListBO searchModel)
+    {
+        model = searchModel;
+        //model.SearchString = "";
+        model.PageNumber = 0;
+        model.PageSize = 24;
+
+        await SearchProduct();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SearchProduct()
+    {
+        loading.Start();
+        model.UserId = _state.UserId;
+        model.CustomerId = _state.CustomerId;
+        model.CompanyId = _state.CompanyId;
+        try
+        {
+            var response = await _http.PostRequest<GenericPagedResponse<IEnumerable<ProductListBO>>>($"api/Product/GetProductsBySearchFilters", model, cts);
+
+            if (response.IsSuccess)
+            {
+                products = response.Data;
+                totalPages = response.TotalPages;
+                totalRecords = response.TotalRecords;
+            }
+            else
+            {
+                products = null;
+                totalPages = 0;
+                totalRecords = 0;
+            }
+        }
+        finally
+        {
+            loading.Stop();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    async Task PageChanged(PagerEventArgs args)
+    {
+        model.PageNumber = args.PageIndex;
+        model.PageSize = args.Top;
+
+        await SearchProduct();
+    }
+
+    public void Dispose()
+    {
+        _search.ClearText();
+        _http.DisposeToken(cts);
+        _search.SearchTextChanged -= SearchTextChange;
+        _search.SetSearchModel -= RefreshSearchResults;
+    }
+}

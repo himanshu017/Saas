@@ -1,0 +1,102 @@
+﻿@page "/Admin/CommentTypes"
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@inject IStateService _state
+
+<PageHeader Title="Comment Types" />
+
+<AlertMessage AlertModel="@alert" />
+
+<RadzenCard>
+    <GridInsertButton Grid="grid" TItem="CommonTypeBO" OnCreateItem="@(() => new CommonTypeBO())" Disabled="@(!_state.AllowMasterTableEditing && disabled)"/>
+
+    <RadzenDataGrid @ref="grid" TItem="CommonTypeBO" Data="@allTypes"
+                    EditMode="DataGridEditMode.Single" RowUpdate="@AddEdit" RowCreate="@AddEdit">
+        <Columns>
+            <RadzenDataGridColumn TItem="CommonTypeBO" Property="Type" Title="Comment Types">
+                <Template Context="row">
+                    <span>@row.TypeDesc</span>
+                </Template>
+                <EditTemplate Context="row">
+                    <RadzenTextBox @bind-Value="row.TypeDesc" class="form-control" MaxLength="100" Name="Type" />
+                    <RadzenRequiredValidator Component="Type" Text="Comment type is required" Popup="true" Style="position: absolute" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <GridControls TItem="CommonTypeBO" Grid="grid" DeleteRow="Delete" Width="120px" OnAction="@(() => disabled = false)"
+                AllowEdit="@_state.AllowMasterTableEditing" AllowDelete=@_state.AllowMasterTableEditing/>
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    RadzenDataGrid<CommonTypeBO>? grid;
+    IEnumerable<CommonTypeBO> allTypes;
+    AlertBO alert = new();
+    bool disabled = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAll();
+    }
+
+    async Task GetAll()
+    {
+        byte typeId = (byte)CommonTypes.CommentType;
+        allTypes = await _httpClient.GetFromJsonAsync<IEnumerable<CommonTypeBO>>($"MasterTables/GetAll?typeId={typeId}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEdit(CommonTypeBO row)
+    {
+        row.TypeId = (byte)CommonTypes.CommentType;
+        var request = await _httpClient.PostAsJsonAsync("MasterTables/AddUpdate", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAll();
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(CommonTypeBO row)
+    {
+        row.TypeId = (byte)CommonTypes.CommentType;
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.TypeDesc}",
+                      new ConfirmOptions()
+                          {
+                              OkButtonText = "Yes",
+                              CancelButtonText = "No"
+                          });
+
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("MasterTables/Delete", row);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAll();
+                    await grid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+        }
+    }
+}

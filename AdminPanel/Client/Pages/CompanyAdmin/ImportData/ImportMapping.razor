@@ -1,0 +1,189 @@
+﻿@inject IStateService _state
+@inject IHttpService _http
+@inject DialogService _dialog
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+<style>
+    .article-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .article {
+        flex: 0 0 50%;
+        padding: 10px;
+    }
+
+    * {
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    .cut-text {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        width: 130px;
+        height: 1.2em;
+        white-space: nowrap;
+    }
+
+    .form-group.required .control-label:after {
+        content: "*";
+        color: red;
+    }
+</style>
+<RadzenTemplateForm TItem="ImportBaseClass" Data=@Model Submit="@ImportData">
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Mapping Title" />
+        </div>
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenTextBox @bind-Value="Model.MappingTitle" MaxLength="100" class="form-control" Name="mappingName" />
+            <RadzenRequiredValidator Component="mappingName" Text="field is required" />
+        </div>
+
+    </div>
+    <div class="container px-12">
+        <div class="row gx-10">
+            <div class="col">
+                <div class="border bg-light">
+                    <div class="row mb-2 article">
+                        <div class="align-items-center d-flex col-md-3">
+                            <RadzenLabel Text="Imported column" />
+                        </div><!--!-->
+                        <div class="align-items-center d-flex col-md-4">
+                            <RadzenLabel Text="System Field" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="article-container">
+        @foreach (var cols in Model.TableColumns)
+        {
+            <div class="row mb-2 article form-group required">
+                <div class="col-md-4">
+                    @if (cols.IsRequired)
+                    {
+                        <RadzenLabel class="cut-text control-label" title="@cols.Name" Text="@cols.Name" />
+                    }
+                    else
+                    {
+                        <RadzenLabel class="cut-text" title="@cols.Name" Text="@cols.Name" />
+                    }
+                </div>
+
+                <div class="col-md-6">
+                    @{
+                        bool isvalid = false;
+                    }
+                    @if (Model.MappingFields != null)
+                    {
+                        @foreach (var mapping in Model.MappingFields)
+                        {
+                            if (Model.ImportedColumns.Contains(mapping.Key) && cols.Name == mapping.Value)
+                            {
+                                <select class="form-control" value="@mapping.Key" @onchange="@((args) => OnChange(args, cols.Name))" required="@cols.IsRequired">
+                                    <option value=""> - Select Excel field -</option>
+                                    @foreach (var col in Model.ImportedColumns)
+                                    {
+                                        <option value="@col">@col</option>
+                                    }
+                                </select>
+                                isvalid = true;
+                                break;
+                            }
+
+                        }
+                    }
+
+                    @if (!isvalid)
+                    {
+                        @*if (Model.ImportedColumns.Contains(cols.Name))
+                        {
+                            <select class="form-control" value="@cols.Name" @onchange="@((args) => OnChange(args, cols.Name))" required="@cols.IsRequired">
+                                <option value=""> - Select Excel field -</option>
+                                @foreach (var col in Model.ImportedColumns)
+                                {
+                                    <option value="@col">@col</option>
+                                }
+                            </select>
+                            isvalid = true;
+                            break;
+                        }
+                        else
+                        {*@
+                            <select class="form-control" @onchange="@((args) => OnChange(args, cols.Name))" required="@cols.IsRequired">
+                                <option value=""> - Select Excel field -</option>
+                                @foreach (var col in Model.ImportedColumns)
+                                {
+                                    <option value="@col">@col</option>
+                                }
+                        </select>
+                        //}
+                    }
+
+
+                    @*<RadzenRequiredValidator Component="Name" Text="field is required" Style="position: absolute" />*@
+                </div>
+            </div>
+        }
+    </div>
+    <div class="d-flex align-items-center">
+        <RadzenButton Text="Submit" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Submit" class="ms-auto" />
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    [Parameter]
+    public ImportBaseClass Model { get; set; }
+    IEnumerable<string> allImportcolumns;
+    IEnumerable<CommonDropdownBO> tablecolumns;
+
+    Dictionary<string, string> mapping = new Dictionary<string, string>();
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (Model.MappingFields != null)
+        {
+            mapping = Model.MappingFields;
+        }
+
+        await Task.Delay(10);
+
+    }
+    async Task ImportData()
+    {
+        Model.MappingFields = mapping;
+        _dialog.Close(Model);
+    }
+
+    void MapFieldValue(object value, string name)
+    {
+        addOrUpdate(mapping, value.ToString(), name);
+    }
+
+    void addOrUpdate(Dictionary<string, string> dic, string key, string newValue)
+    {
+        string val;
+        if (dic.TryGetValue(key, out val))
+        {
+            dic[key] = newValue;
+        }
+        else
+        {
+            // darn, lets add the value
+            dic.Add(key, newValue);
+        }
+    }
+
+    void OnChange(ChangeEventArgs args, string name)
+    {
+        Console.WriteLine(args.Value);
+        addOrUpdate(mapping, args.Value?.ToString(), name);
+    }
+}

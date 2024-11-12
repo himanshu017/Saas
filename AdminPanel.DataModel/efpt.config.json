@@ -1,0 +1,400 @@
+﻿{
+   "CodeGenerationMode": 3,
+   "ContextClassName": "OrderflowContext",
+   "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "ModelNamespace": null,
+   "OutputContextPath": "Context",
+   "OutputPath": "Models",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "AdminPanel.DataModel",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[Address]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AddressType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Cities]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Comments]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CommentType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Company]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyAddress]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyConfigurationSettings]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyDataImportMappings]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyInformationalTexts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyPackageDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanyPostedLinks]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanySliders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CompanySpecials]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Countries]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Customer]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerAddress]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerDeliveryRun]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerImport]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerParentChild]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerSpecialCategory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerUserFeaturesMaster]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerWarehouse]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeliveryCutoffType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeliveryDateCutoff]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeliveryRuns]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Discount]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DiscountedCustomers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DiscountedProducts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DiscountLimitationType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DiscountType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FavoriteList]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FavoriteListItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FavoriteListType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FeatureDescription]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Filters]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GlobalTimeZones]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Groups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupScope]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[GroupType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ImportLogs]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MainCategories]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MarketingItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MarketingType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MessageRecipients]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Messages]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Order]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[OrderItemAttributes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[OrderItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PackageFeatures]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PackageInterval]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Packages]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PaymentProcessor]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PaymentTransaction]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PredefinedProductAttributeValue]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Product]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductAttribute]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductAttributeMapping]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductAttributeValue]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductImages]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductImport]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductInventory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductTag]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductUnit]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ProductWarehouse]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SpecialPriceImport]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SpecialPricing]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[States]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Status]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StatusType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SubCategories]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SuggestiveProducts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Tag]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TagType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TargetMarketing]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TempCart]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TempCartItemAttributes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TempCartItems]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UnitOfMeasurement]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserAddress]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserDeviceLocationAndToken]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserPassword]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Users]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserSalesrepCodes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Warehouse]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[InsertSeedData]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_SyncAPICustomers]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_SyncAPIProducts]",
+         "ObjectType": 1
+      }
+   ],
+   "UiHint": "meanmachine.EzOrders.dbo",
+   "UncountableWords": null,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDateOnlyTimeOnly": false,
+   "UseDbContextSplitting": false,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false
+}

@@ -1,0 +1,188 @@
+﻿@page "/FavoriteLists"
+@inject NavigationManager _nav
+@inject IHttpService _http
+@inject DialogService _dialog
+@implements IDisposable
+
+<PTitle Title="User Lists" />
+<TitleBanner Title="Favorite Lists"/>
+<!--=====================================
+            SHOP PART START
+=======================================-->
+<section class="inner-section shop-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="col-3">
+                    @if (!showListItems)
+                    {
+                        <RadzenButton ButtonType="ButtonType.Button" Text="Add List"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  class="mb-2"
+                                  Icon="add_box" Click="@(() => AddUpdateList(new FavoriteListBO()))" />
+                    }
+                    else
+                    {
+                        <div class="container">
+                        <RadzenButton ButtonType="ButtonType.Button" Text="Back To Lists"
+                                  ButtonStyle="ButtonStyle.Secondary" class="mb-2" Icon="list"
+                                  Click="@BackToList" />
+                                  </div>
+                    }
+                </div>
+            </div>
+
+            @if (!showListItems)
+            {
+                <div class="col-lg-12">
+                    <div class="table-scroll">
+                        <table class="table table-list bg-white">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="text-start">List Name</th>
+                                    <th scope="col" width="20%">Type</th>
+                                    <th scope="col" width="20%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (favLists != null && favLists.Count() > 0)
+                                {
+                                    @foreach (var item in favLists)
+                                    {
+                                        <tr>
+                                            <td class="table-serial text-start"><h6>@item.Name</h6></td>
+                                            <td class="table-image">@item.TypeDesc</td>
+                                            <td class="table-action">
+                                                <RadzenButton class="mb-1" Icon="visibility" ButtonStyle="ButtonStyle.Info" title="View Items"
+                                                  Click="@(() => ShowItemsForList(item.Id))" />
+                                                <RadzenButton class="mb-1" Icon="edit" ButtonStyle="ButtonStyle.Success" title="Edit List" Click="@(() => AddUpdateList(item))"
+                                                  Visible=@(item.TypeId != (byte)FavListTypes.Default) />
+                                                <RadzenButton class="mb-1" Icon="file_copy" ButtonStyle="ButtonStyle.Warning" title="Copy List" Click="@(() => AddUpdateList(item, true))" />
+                                                <RadzenButton class="mb-1" Icon="delete" ButtonStyle="ButtonStyle.Danger" title="Delete List" Click="@(() => DeleteList(item))"
+                                                  Visible=@(item.TypeId != (byte)FavListTypes.Default) />
+                                            </td>
+                                        </tr>
+                                    }
+
+                                }else{
+                                    <tr>
+                                        <td colspan="3">
+                                            <p>No favorite lists available!</p>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <RecentItems IsListPage="true" ListId="selectedList" />
+            }
+        </div>
+    </div>
+</section>
+<!--=====================================
+            SHOP PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    GetFavLists listModel = new();
+    FavoriteListBO model = new();
+    IEnumerable<FavoriteListBO> favLists;
+    bool showListItems = false;
+    long selectedList = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetFavoriteLists();
+    }
+
+    async Task GetFavoriteLists()
+    {
+        loading.Start();
+        listModel.CompanyId = _state.CompanyId;
+        listModel.CustomerId = _state.CustomerId;
+        listModel.UserId = _state.UserId;
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<FavoriteListBO>>>($"api/Product/GetFavoriteLists{Extensions.ConvertToQueryString(listModel)}", cts);
+
+        if (response.IsSuccess)
+        {
+            favLists = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+        loading.Stop();
+    }
+
+    async Task AddUpdateList(FavoriteListBO row, bool isCopy = false)
+    {
+        var listModel = (FavoriteListBO)row.Clone();
+        var listType = isCopy ? (byte)FavListTypes.Copied_List : (byte)FavListTypes.Customer_Created;
+        listModel.TypeId = listType;
+        listModel.IsCopy = isCopy;
+        listModel.MainListId = row.Id;
+
+        var res = await _dialog.OpenAsync<AddUpdateFavList>($"{(listType == (byte)FavListTypes.Copied_List ? "Copy" : (row.Id == 0 ? "Add" : "Update"))} Favorite List",
+               new Dictionary<string, object>() {
+                                        { "Model", listModel } });
+
+        if (res != null)
+        {
+            var list = (FavoriteListBO)res;
+            list.CustomerId = _state.CustomerId;
+
+            if (list.Id > 0)
+            {
+                list.ModifiedBy = _state.UserId;
+                list.ModifiedOn = DateTime.UtcNow;
+            }
+            else
+            {
+                list.CreatedBy = _state.UserId;
+                list.CreatedOn = DateTime.UtcNow;
+            }
+
+            loading.Start();
+            var result = await _http.PostRequest<GenericResponse<bool>>("api/Product/AddUpdateFavList", list, cts);
+
+            if (result.IsSuccess)
+            {
+                await GetFavoriteLists();
+            }
+
+            loading.Stop();
+        }
+    }
+
+    async Task DeleteList(FavoriteListBO row)
+    {
+        if (await _notify.ConfirmDialog("Are you sure?",$"Delete {row.Name}"))
+        {
+            var result = await _http.PostRequest<GenericResponse<bool>>("api/Product/DeleteFavList", row.Id, cts);
+
+            if (result.IsSuccess)
+            {
+                await GetFavoriteLists();
+            }
+        }
+    }
+
+    void ShowItemsForList(long id)
+    {
+        showListItems = true;
+        selectedList = id;
+    }
+
+    void BackToList()
+    {
+        showListItems = false;
+        selectedList = 0;
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

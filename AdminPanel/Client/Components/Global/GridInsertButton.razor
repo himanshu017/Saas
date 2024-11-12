@@ -1,0 +1,37 @@
+﻿@typeparam TItem
+
+<ErrorBoundary>
+
+    <div class="d-flex my-2 ">
+        <RadzenButton Icon="add_circle_outline" Text="Add" Click="@OnClick" Disabled="@Disabled" Size="ButtonSize.Small" />
+
+        <div class="ms-4">
+            @ChildContent
+        </div>
+    </div>
+
+</ErrorBoundary>
+
+
+@code {
+    [Parameter]
+    public RadzenDataGrid<TItem> Grid { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public Func<TItem> OnCreateItem { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    async Task OnClick()
+    {
+        var row = OnCreateItem.Invoke();
+        await Grid.InsertRow(row);
+        Disabled = true;
+        await Task.Delay(30);
+        await Grid.ExpandRow(row);
+    }
+}

@@ -1,0 +1,99 @@
+﻿@page "/"
+@page "/Home"
+@inject IJSRuntime jsRuntime
+@inject IHttpService _http
+@inject NavigationManager _nav
+@implements IDisposable
+<PTitle/>
+<HeadContent>
+    <link rel="stylesheet" href="theme/css/home-classic.css">
+</HeadContent>
+
+<HomeSlider OnLoad="@((val) => hasSlider = val)"/>
+
+<!--=====================================
+            SUGGEST PART START
+=======================================-->
+<section class="section suggest-part @(!hasSlider ? "mt-6" : "")">
+    <div class="container">
+        <ul class="suggest-slider slider-arrow">
+            @if (categories != null)
+            {
+                foreach (var cat in categories)
+                {
+                    <li>
+                        <a class="suggest-card" href="javascript:;">
+                            <img src="https://picsum.photos/250/120?grayscale" alt="suggest">
+                            <h5>@cat.CategoryName <span>@cat.ItemCount items</span></h5>
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+</section>
+<!--=====================================
+            SUGGEST PART END
+=======================================-->
+
+<RecentlySold />
+
+<!--=====================================
+                    PROMOTION PART START
+=======================================-->
+<div class="section promo-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="promo-img">
+                    <a href=""><img src="theme/images/promo/home/03.jpg" alt="promo"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--=====================================
+            PROMOTION PART END
+=======================================-->
+
+<FeaturedProducts />
+
+<BrowseTopSelection />
+@code {
+
+    IEnumerable<CategoryListBO> categories;
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    bool hasSlider = true;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await GetAllCategories();
+
+        await Task.Delay(100);
+        await jsRuntime.InvokeVoidAsync("categorySlider");
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    async Task GetAllCategories()
+    {
+        // loading.Start();
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<CategoryListBO>>>($"api/Home/GetAllCategories?companyId={_state.CompanyId}", cts);
+
+        if (response.IsSuccess)
+        {
+            categories = response.Data;
+        }
+        // loading.Stop();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

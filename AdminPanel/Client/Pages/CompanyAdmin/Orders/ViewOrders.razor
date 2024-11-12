@@ -1,0 +1,121 @@
+﻿@page "/Orders"
+@using AdminPanel.Shared.BO.MasterAdmin
+@inject IHttpService _http
+@inject IStateService _state
+@inject NavigationManager _nav
+@inject NotificationService _notify
+
+<PageHeader Title="Orders" />
+<Loading @ref="loading" />
+
+<RadzenDataGrid @ref="grid" Data="@allorders" TItem="OrderListBO" ExpandMode="DataGridExpandMode.Single">
+    <Columns>
+        <RadzenDataGridColumn TItem="OrderListBO" Property="OrderNumber" Title="Order #" Width="130px">
+            <Template Context="row">
+                @* <span>@row.OrderNumber</span>*@
+                @*<RadzenLink Path="@($"/OrderDetail?orderId={row.OrderId.ToString()}")" Text="@row.OrderNumber" />*@
+                <a href="/OrderDetail?orderId=@row.OrderId.ToString()"><span>@row.OrderNumber</span> </a>
+                @*<RadzenButton [Text]="@row.OrderNumber" title="@row.OrderId" Click="@(() => EditOrder(row))" />*@
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderListBO" Property="CustomerName" Title="CustomerName">
+            <Template Context="row">
+                <span>@row.CustomerName</span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderListBO" Title="Status">
+
+            <Template Context="row">
+                @{
+                    var currentStatus = (OrderStatus)row.StatusId;
+                }
+                <span>@currentStatus</span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderListBO" Property="Name" Title="Name">
+            <Template Context="row">
+                <span>@row.UserFirstName @row.UserLastName</span>
+            </Template>
+        </RadzenDataGridColumn>
+
+
+
+        <RadzenDataGridColumn TItem="OrderListBO" Property="OrderTotal" Title="Total" Width="90px">
+            <Template Context="row">
+                <span>@row.OrderTotal.ToPrice(_state.CurrencyInfo)</span>
+            </Template>
+        </RadzenDataGridColumn>
+
+    </Columns>
+
+</RadzenDataGrid>
+<RadzenPager class="px-0" PageSizeOptions="@pageSizeOptions" ShowPagingSummary="true"
+             PagingSummaryFormat="@pagingSummaryFormat" Count="totalRecords" PageSize="model.PageSize"
+             PageNumbersCount="5" PageChanged="@PageChanged" PageSizeChanged="@PageSizeChanged" />
+@code {
+
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    RadzenDataGrid<OrderListBO>? grid;
+    Loading loading;
+    IEnumerable<OrderListBO>? allorders;
+    GetProductModel model = new();
+    int totalRecords = 0;
+    string pagingSummaryFormat = "Displaying page {0} of {1} (total {2} records)";
+    List<int> pageSizeOptions = new List<int>() { 20, 50, 100, 200 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 25;
+        model.PageNumber = 1;
+        await GetAllOrders($"PageSize={model.PageSize}");
+    }
+
+    async Task GetAllOrders(string query = "")
+    {
+        loading.ShowLoading();
+        allorders = await _http.GetAllRecords<IEnumerable<OrderListBO>>($"Orders/GetAllOrders?CompanyId={model.CompanyId}&{query}");
+        if (allorders.Count() > 0)
+        {
+            totalRecords = allorders.ToList()[0]?.TotalRecords ?? 0;
+        }
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+
+
+
+
+    async Task PageChanged(PagerEventArgs args)
+    {
+        model.PageSize = args.Top;
+        model.PageNumber = args.PageIndex;
+
+        await GetAllOrders($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+        Console.WriteLine($"{args.Skip}, {args.Top}, {args.PageIndex}");
+    }
+
+    async Task PageSizeChanged(int size)
+    {
+        model.PageSize = size;
+        model.PageNumber = 1;
+        await GetAllOrders($"PageSize={model.PageSize}&PageNumber={model.PageNumber}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditOrder(OrderListBO row)
+    {
+        var queryParams = new Dictionary<string, string>
+            {
+                ["OrderId"] = row.OrderId.ToString()
+            };
+        _nav.NavigateTo(QueryHelpers.AddQueryString("OrderDetail", queryParams));
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

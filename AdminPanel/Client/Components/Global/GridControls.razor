@@ -1,0 +1,53 @@
+﻿@typeparam TItem
+
+<RadzenDataGridColumn TItem="TItem" Width="@Width" CssClass="text-center">
+    <Template Context="row">
+        @if (AllowEdit)
+        {
+            <RadzenButton Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Icon="edit" Click="@(args =>{ Grid.EditRow(row); Grid.ExpandRow(row); OnAction.InvokeAsync(true);})" class="mr-2" />
+        }
+        @{
+            bool allowDelete = (AllowDeleteIf != null) ?
+            AllowDeleteIf.Invoke(row) :
+            AllowDelete;
+        }
+
+        @if (allowDelete)
+        {
+            <RadzenButton Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Icon="delete" Click="@(args => OnDeleteRow(row))" />
+        }
+
+        @ChildContent
+    </Template>
+    <EditTemplate Context="row">
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Icon="save" Click="@((args) => {Grid.UpdateRow(row); Grid.ExpandRow(row); OnAction.InvokeAsync(false);})" class="mr-2" />
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Icon="cancel" Click="@((args) => {Grid.CancelEditRow(row); Grid.ExpandRow(row); OnAction.InvokeAsync(false);})" />
+    </EditTemplate>
+</RadzenDataGridColumn>
+
+@code {
+    [Parameter]
+    public RadzenDataGrid<TItem> Grid { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> DeleteRow { get; set; }
+
+    [Parameter]
+    public string Width { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> ChildContent { get; set; }
+
+    [Parameter]
+    public bool AllowDelete { get; set; } = true;
+    [Parameter]
+    public bool AllowEdit { get; set; } = true;
+
+    [Parameter]
+    public Func<TItem, bool> AllowDeleteIf { get; set; }
+
+    async Task OnDeleteRow(TItem row) => await DeleteRow.InvokeAsync(row);
+
+    [Parameter]
+    public EventCallback<bool> OnAction{ get; set; }
+}

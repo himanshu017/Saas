@@ -1,0 +1,160 @@
+﻿@inject IDomainService _domain
+<!--=====================================
+            INTRO PART START
+=======================================-->
+<section class="intro-part">
+    <div class="container">
+        <div class="row intro-content">
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="intro-content">
+                        <h5>free home delivery</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="intro-content">
+                        <h5>instant return policy</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div class="intro-content">
+                        <h5>quick support system</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="intro-wrap">
+                    <div class="intro-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div class="intro-content">
+                        <h5>secure payment way</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--=====================================
+            INTRO PART END
+=======================================-->
+<!--=====================================
+             FOOTER PART START
+=======================================-->
+<footer class="footer-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6 col-xl-3">
+                <div class="footer-widget">
+                    <a class="footer-logo text-center" href="javascript:;">
+                        <img src="@path" alt="logo">
+                    </a>
+                    <p class="footer-desc">Adipisci asperiores ipsum ipsa repellat consequatur repudiandae quisquam assumenda dolor perspiciatis sit ipsum dolor amet.</p>
+                    <ul class="footer-social">
+                        <li><a class="icofont-facebook" href="javascript:;"></a></li>
+                        <li><a class="icofont-twitter" href="javascript:;"></a></li>
+                        <li><a class="icofont-linkedin" href="javascript:;"></a></li>
+                        <li><a class="icofont-instagram" href="javascript:;"></a></li>
+                        <li><a class="icofont-pinterest" href="javascript:;"></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="footer-widget contact">
+                    <h3 class="footer-title">contact us</h3>
+                    <ul class="footer-contact">
+                        <li>
+                            <i class="icofont-ui-email"></i>
+                            <p>
+                                <span>@_state.CompanyEmail</span>
+                            </p>
+                        </li>
+                        <li>
+                            <i class="icofont-ui-touch-phone"></i>
+                            <p>
+                                <span>@_state.CompanyPhone</span>
+                            </p>
+                        </li>
+                        @* <li>
+                        <i class="icofont-location-pin"></i>
+                        </li> *@
+                    </ul>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="footer-widget">
+                    <h3 class="footer-title">quick Links</h3>
+                    <div class="footer-links">
+                        <AuthorizeView>
+                            <ul>
+                                <li><a href="userprofile">My Account</a></li>
+                                <li><a href="History">Order History</a></li>
+                                <li><a href="specials">Best Seller</a></li>
+                                <li><a href="specials">New Arrivals</a></li>
+                            </ul>
+                        </AuthorizeView>
+                        <ul>
+                            <li><a href="javascript:;">Contact</a></li>
+                            <li><a href="javascript:;">Carrer</a></li>
+                            <li><a href="javascript:;">Faq</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="footer-widget">
+                    <h3 class="footer-title">Download App</h3>
+                    <p class="footer-desc">Lorem ipsum dolor sit amet tenetur dignissimos ipsum eligendi autem obcaecati minus ducimus totam reprehenderit exercitationem!</p>
+                    <div class="footer-app">
+                        <a href="javascript:;"><img src="theme/images/google-store.png" alt="google"></a>
+                        <a href="javascript:;"><img src="theme/images/app-store.png" alt="app"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="footer-bottom">
+                    <p class="footer-copytext">&copy;  All Copyrights Reserved by <a target="_blank" href="https://ezorders.us/">EZ-Orders</a></p>
+                    <div class="footer-card">
+                        <a href="javascript:;"><img src="theme/images/payment/jpg/01.jpg" alt="payment"></a>
+                        <a href="javascript:;"><img src="theme/images/payment/jpg/02.jpg" alt="payment"></a>
+                        <a href="javascript:;"><img src="theme/images/payment/jpg/03.jpg" alt="payment"></a>
+                        <a href="javascript:;"><img src="theme/images/payment/jpg/04.jpg" alt="payment"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<!--=====================================
+              FOOTER PART END
+=======================================-->
+@code {
+    string path = "theme/images/ez-logo-dark.svg";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _domain.OnDataSet += SetData;
+        await Task.Delay(100);
+        SetData();
+    }
+    void SetData()
+    {
+        path = $"{_state.ImagePath}/companyLogo/{_state.DomainName}/{_state.Logo}";
+        StateHasChanged();
+    }
+}

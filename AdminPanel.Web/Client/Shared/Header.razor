@@ -1,0 +1,119 @@
+﻿@inject IJSRuntime jsRuntime
+@inject IStateService _state
+@inject IDomainService _domain
+<!--=====================================
+                  HEADER TOP PART START
+      =======================================-->
+<div class="header-top">
+    <div class="container">
+        <div class="row justify-content-between">
+            <div class="col-md-12 col-lg-5">
+                <div class="header-top-welcome">
+                    <p>Welcome to our Online Store!</p>
+                </div>
+            </div>
+
+            <div class="col-md-7 col-lg-4">
+                <ul class="header-top-list">
+                    <li><a href="javascript:;">offers</a></li>
+                    <li><a href="javascript:;">need help</a></li>
+                    <li><a href="javascript:;">contact us</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!--=====================================
+            HEADER TOP PART END
+=======================================-->
+<!--=====================================
+            HEADER PART START
+=======================================-->
+<header class="header-part">
+    <div class="container">
+        <div class="header-content">
+            <div class="header-media-group">
+                <button class="header-user"><img src="theme/images/user.png" alt="user"></button>
+                <a href="/"><img src="@path" alt="logo"></a>
+                <button class="header-src"><i class="fas fa-search"></i></button>
+            </div>
+
+            <a href="/" class="header-logo">
+                <img src=@path alt="logo">
+            </a>
+            <AuthorizeView>
+                <Authorized Context="auth">
+                    <a href="UserProfile" class="header-widget" title="My Account">
+                        <img src="theme/images/user.png" alt="user">
+                        <span>@(_state.FullName)</span>
+                    </a>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="login" class="header-widget" title="My Account">
+                        <img src="theme/images/user.png" alt="user">
+                        <span>Login/Register</span>
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+
+            @if (_state.IsAuthenticated && _state.ManagedFeatures.IsSearchProducts)
+            {
+                <GlobalSearch />
+            }
+            <div class="header-widget-group">
+                @* <a href="compare.html" class="header-widget" title="Compare List">
+                <i class="fas fa-random"></i>
+                <sup>0</sup>
+                </a>
+                <a href="wishlist.html" class="header-widget" title="Wishlist">
+                <i class="fas fa-heart"></i>
+                <sup>0</sup>
+                </a>*@
+                <AuthorizeView>
+                    <Authorized Context="auth">
+                        <a href="/cart" class="header-widget header-cart" title="Cartlist">
+                            <i class="fas fa-shopping-basket"></i>
+                            @if (@_state.CartCountBO.CartCount > 0)
+                            {
+                                <sup>@_state.CartCountBO.CartCount</sup>
+                                <span>
+                                    total price<small>
+                                        @(_state.CartCountBO.CartTotalWithTax.ToPrice(_state.CurrencyInfo))
+                                    </small>
+                                </span>
+                            }
+                        </a>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</header>
+<!--=====================================
+            HEADER PART END
+=======================================-->
+@code {
+    string path = "theme/images/ez-logo-dark.svg";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _domain.OnDataSet += SetData;
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Delay(100);
+        await jsRuntime.InvokeVoidAsync("menuToggles");
+        await base.OnAfterRenderAsync(firstRender);
+        if (!string.IsNullOrEmpty(_state.Logo))
+            path = $"{_state.ImagePath}/companyLogo/{_state.DomainName}/{_state.Logo}";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void SetData()
+    {
+        path = $"{_state.ImagePath}/companyLogo/{_state.DomainName}/{_state.Logo}";
+        StateHasChanged();
+    }
+}

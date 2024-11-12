@@ -1,0 +1,248 @@
+﻿@page "/Dashboard"
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3>150</h3>
+                    <p>New Orders</p>
+                </div>
+                <div class="icon">
+                    <i class="fa fa-shopping-bag"></i>
+                </div>
+                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>53<sup style="font-size: 20px">%</sup></h3>
+                    <p>Bounce Rate</p>
+                </div>
+                <div class="icon">
+                    <i class="fa fa-chart-bar"></i>
+                </div>
+                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3>44</h3>
+                    <p>User Registrations</p>
+                </div>
+                <div class="icon">
+                    <i class="fa fa-user-plus"></i>
+                </div>
+                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-danger">
+                <div class="inner">
+                    <h3>65</h3>
+                    <p>Unique Visitors</p>
+                </div>
+                <div class="icon">
+                    <i class="fa fa-chart-pie"></i>
+                </div>
+                <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    @if (!isSubscribed)
+    {
+        <RadzenCard class="pb-0">
+            <h5 class="fs-5 text-muted text-center">
+                You are currently using the basic plan for EZ-Orders. Upgrade to a higher plan and avail more benifits to the service.
+            </h5>
+            <div class="row row-cols-1 row-cols-md-4 mb-3 text-center">
+                <div class="col">
+                    <div class="card mb-4 rounded-3 shadow-sm border-primary">
+                        <div class="card-header py-2  border-primary">
+                            <h4 class="my-0 fw-normal">Basic</h4>
+                        </div>
+                        <div class="card-body">
+                            <h1 class="card-title pricing-card-title">$0<small class="text-muted fw-light">/mo</small></h1>
+                            <ul class="list-unstyled mt-2 mb-2">
+                                <li>100 Customers</li>
+                                <li>200 Orders/month</li>
+                                <li>2000 Products</li>
+                                <li>Basic app features</li>
+                                <li>48 to 72 hour support queue</li>
+                            </ul>
+                            <button type="button" disabled class="w-100 btn btn-lg btn-outline-primary">Current Plan</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card mb-4 rounded-3 shadow-sm">
+                        <div class="card-header py-2">
+                            <h4 class="my-0 fw-normal">Silver</h4>
+                        </div>
+                        <div class="card-body">
+                            <h1 class="card-title pricing-card-title">$250<small class="text-muted fw-light">/mo</small></h1>
+                            <ul class="list-unstyled mt-2 mb-2">
+                                <li>500 Customers</li>
+                                <li>1000 Orders/month</li>
+                                <li>5000 Product</li>
+                                <li>Mobile Application Access</li>
+                                <li>24 hour support queue</li>
+                            </ul>
+                            <button type="button" class="w-100 btn btn-lg btn-primary">Upgrade</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card mb-4 rounded-3 shadow-sm">
+                        <div class="card-header py-2">
+                            <h4 class="my-0 fw-normal">Gold</h4>
+                        </div>
+                        <div class="card-body">
+                            <h1 class="card-title pricing-card-title">$550<small class="text-muted fw-light">/mo</small></h1>
+                            <ul class="list-unstyled mt-2 mb-2">
+                                <li>2000 Customers</li>
+                                <li>5000 Orders/month</li>
+                                <li>10000 Products</li>
+                                <li>Mobile access</li>
+                                <li>Priority help support</li>
+                            </ul>
+                            <button type="button" class="w-100 btn btn-lg btn-primary">Upgrade</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card mb-4 rounded-3 shadow-sm">
+                        <div class="card-header py-2 text-bg-primary">
+                            <h4 class="my-0 fw-normal">Platinum</h4>
+                        </div>
+                        <div class="card-body">
+                            <h1 class="card-title pricing-card-title">$1000<small class="text-muted fw-light">/mo</small></h1>
+                            <ul class="list-unstyled mt-2 mb-2">
+                                <li>Unlimited Customers</li>
+                                <li>Unlimited Orders/month</li>
+                                <li>Unlimited Products</li>
+                                <li>Mobile + POD Access</li>
+                                <li>Priority help support</li>
+                            </ul>
+                            <button type="button" class="w-100 btn btn-lg btn-primary">Upgrade</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </RadzenCard>
+    }
+
+    <div class="row">
+        <div class="col-sm-12 col-lg-6 my-5">
+            <RadzenCard class="w-100 mb-4">
+                <h4>Column series</h4>
+                <RadzenChart>
+                    <RadzenColumnSeries Data="@revenue2020" CategoryProperty="Quarter" Title="2020" LineType="LineType.Dashed" ValueProperty="Revenue">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenColumnSeries>
+                    <RadzenColumnSeries Data="@revenue2019" CategoryProperty="Quarter" Title="2019" ValueProperty="Revenue">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenColumnSeries>
+                    <RadzenColumnOptions Radius="5" Width="20" />
+                    <RadzenCategoryAxis Padding="20" />
+                    <RadzenValueAxis Formatter="@FormatAsUSD">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Revenue in USD" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenCard>
+        </div>
+        <div class="col-sm-12 col-lg-6 my-5">
+            <RadzenCard class="w-100 mb-4">
+                <h4>Donut Chart</h4>
+                <RadzenChart>
+                    <RadzenDonutSeries Data="@revenue2019" CategoryProperty="Quarter" ValueProperty="Revenue">
+                        <ChildContent>
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </ChildContent>
+                        <TitleTemplate>
+                            <div class="rz-donut-content">
+                                <div>Revenue</div>
+                                <div>for 2019</div>
+                            </div>
+                        </TitleTemplate>
+                    </RadzenDonutSeries>
+                </RadzenChart>
+            </RadzenCard>
+        </div>
+    </div>
+</div>
+
+@code {
+    bool isSubscribed = false;
+    bool showDataLabels = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    class DataItem
+    {
+        public string Quarter { get; set; }
+        public double Revenue { get; set; }
+    }
+
+    string FormatAsUSD(object value)
+    {
+        return ((double)value).ToString("C0");
+    }
+
+    DataItem[] revenue2019 = new DataItem[] {
+        new DataItem
+        {
+            Quarter = "Q1",
+            Revenue = 234000
+        },
+        new DataItem
+        {
+            Quarter = "Q2",
+            Revenue = 284000
+        },
+        new DataItem
+        {
+            Quarter = "Q3",
+            Revenue = 274000
+        },
+        new DataItem
+        {
+            Quarter = "Q4",
+            Revenue = 294000
+        },
+    };
+
+    DataItem[] revenue2020 = new DataItem[] {
+        new DataItem
+        {
+            Quarter = "Q1",
+            Revenue = 254000
+        },
+        new DataItem
+        {
+            Quarter = "Q2",
+            Revenue = 324000
+        },
+        new DataItem
+        {
+            Quarter = "Q3",
+            Revenue = 354000
+        },
+        new DataItem
+        {
+            Quarter = "Q4",
+            Revenue = 394000
+        },
+
+    };
+}

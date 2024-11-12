@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="7.0.11" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.4" />
+    <PackageReference Include="Stripe.net" Version="42.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AdminPanel.DataModel\AdminPanel.DataModel.csproj" />
+    <ProjectReference Include="..\..\AdminPanel.Services\AdminPanel.Services.csproj" />
+    <ProjectReference Include="..\..\EZOrders.PaymentGateway\EZOrders.PaymentGateway.csproj" />
+    <ProjectReference Include="..\Client\AdminPanel.Client.csproj" />
+    <ProjectReference Include="..\Shared\AdminPanel.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Marketing\" />
+    <Folder Include="wwwroot\Marketing\orderflow\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="EPPlus">
+      <HintPath>..\..\ExternalReference\EPPlus.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+
+</Project>

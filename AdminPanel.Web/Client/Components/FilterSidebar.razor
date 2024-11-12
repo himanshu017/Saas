@@ -1,0 +1,294 @@
+﻿@inject ISearchService _search
+@inject IHttpService _http
+@implements IDisposable
+
+<div class="shop-widget-promo">
+    <a href="javascript:;"><img src="theme/images/promo/shop/01.jpg" alt="promo"></a>
+</div>
+@*<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Price</h6>
+    <form>
+        <div class="shop-widget-group">
+            <input type="text" placeholder="Min - 00">
+            <input type="text" placeholder="Max - 5k">
+        </div>
+        <button class="shop-widget-btn">
+            <i class="fas fa-search"></i>
+            <span>search</span>
+        </button>
+    </form>
+</div>
+<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Rating</h6>
+    <form>
+        <ul class="shop-widget-list">
+            <li>
+                <div class="shop-widget-content">
+                    <input type="checkbox" id="feat1">
+                    <label for="feat1">
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                    </label>
+                </div>
+                <span class="shop-widget-number">(13)</span>
+            </li>
+            <li>
+                <div class="shop-widget-content">
+                    <input type="checkbox" id="feat2">
+                    <label for="feat2">
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star"></i>
+                    </label>
+                </div>
+                <span class="shop-widget-number">(28)</span>
+            </li>
+            <li>
+                <div class="shop-widget-content">
+                    <input type="checkbox" id="feat3">
+                    <label for="feat3">
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </label>
+                </div>
+                <span class="shop-widget-number">(35)</span>
+            </li>
+            <li>
+                <div class="shop-widget-content">
+                    <input type="checkbox" id="feat4">
+                    <label for="feat4">
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </label>
+                </div>
+                <span class="shop-widget-number">(47)</span>
+            </li>
+            <li>
+                <div class="shop-widget-content">
+                    <input type="checkbox" id="feat5">
+                    <label for="feat5">
+                        <i class="fas fa-star active"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </label>
+                </div>
+                <span class="shop-widget-number">(59)</span>
+            </li>
+        </ul>
+        <button class="shop-widget-btn">
+            <i class="far fa-trash-alt"></i>
+            <span>clear filter</span>
+        </button>
+    </form>
+</div>*@
+<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Category</h6>
+    <div>
+        <RadzenTextBox class="w-100 shop-widget-search" @bind-Value="categorySearch" Placeholder="Search..." />
+        <ul class="shop-widget-list shop-widget-scroll">
+            @if (subCats != null && subCats.Count() > 0)
+            {
+                <RadzenCheckBoxList @bind-Value=@catVals TValue="long?" Orientation="Orientation.Vertical"
+                                Data="@(categorySearch == "" ? allCats : allCats.Where(x => x.Name.Contains(categorySearch,StringComparison.CurrentCultureIgnoreCase)))"
+                                TextProperty="Name" ValueProperty="Id"
+                                Change=@(args => OnCatChange(args)) />
+            }
+        </ul>
+        <button class="shop-widget-btn" type="button" @onclick="@(() => {categorySearch = ""; catVals = null; OnCatChange(catVals);})">
+            <i class="far fa-trash-alt"></i>
+            <span>clear filter</span>
+        </button>
+    </div>
+</div>
+
+<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Sub-Category</h6>
+    <div>
+        <RadzenTextBox class="w-100 shop-widget-search" @bind-Value="subCategorySearch" Placeholder="Search..." />
+        <ul class="shop-widget-list shop-widget-scroll">
+            @if (subCats != null && subCats.Count() > 0)
+            {
+                <RadzenCheckBoxList @bind-Value=@subCatVals TValue="long?" Orientation="Orientation.Vertical"
+                                Data="@(subCategorySearch == "" ? subCats : subCats.Where(x => x.Name.Contains(subCategorySearch,StringComparison.CurrentCultureIgnoreCase)))"
+                                TextProperty="Name" ValueProperty="Id"
+                                Change=@(args => OnCatChange(args)) />
+            }
+        </ul>
+        <button class="shop-widget-btn"
+                @onclick="@(() => {subCategorySearch = ""; subCatVals = null; OnCatChange(subCatVals);})">
+            <i class="far fa-trash-alt"></i>
+            <span>clear filter</span>
+        </button>
+    </div>
+</div>
+
+<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Unit</h6>
+    <div>
+        <ul class="shop-widget-list shop-widget-scroll">
+            @if (units != null && units.Count() > 0)
+            {
+                <RadzenCheckBoxList @bind-Value=@uomVals TValue="long?" Orientation="Orientation.Vertical"
+                                Data="@units" TextProperty="Name" ValueProperty="UnitId"
+                                Change=@(args => OnUOMChange(args)) />
+            }
+        </ul>
+        <button class="shop-widget-btn"
+                @onclick="@(() => {uomVals = null; OnUOMChange(uomVals);})">
+            <i class="far fa-trash-alt"></i>
+            <span>clear filter</span>
+        </button>
+    </div>
+</div>
+<div class="shop-widget">
+    <h6 class="shop-widget-title">Filter by Classes</h6>
+    <div>
+        <ul class="shop-widget-list shop-widget-scroll">
+            @if (filters != null && filters.Count() > 0)
+            {
+                <RadzenCheckBoxList @bind-Value=@filterVals TValue="int?" Orientation="Orientation.Vertical"
+                                Data="@filters" TextProperty="Name" ValueProperty="FilterId"
+                                Change=@(args => OnFilterChange(args)) />
+            }
+        </ul>
+        <button class="shop-widget-btn"
+                @onclick="@(() => {filterVals = null; OnFilterChange(filterVals);})">
+            <i class="far fa-trash-alt"></i>
+            <span>clear filter</span>
+        </button>
+    </div>
+</div>
+
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<CategoryListBO> categories;
+    GetAllCategoriesBO model = new();
+    IEnumerable<FiltersBO> filters;
+    IEnumerable<UnitOfMeasureBO> units;
+    List<DistinctFilterVals> subCats = new();
+    List<DistinctFilterVals> allCats = new();
+
+    [Parameter]
+    public GetProductListBO ProductModel { get; set; }
+
+    IEnumerable<long?> uomVals;
+    IEnumerable<long?> catVals;
+    IEnumerable<long?> subCatVals;
+    IEnumerable<int?> filterVals;
+
+    string categorySearch = "";
+    string subCategorySearch = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await InvokeAsync(StateHasChanged);
+        await GetAllCategories();
+        await GetAllFilters();
+        await GetAllUnits();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (ProductModel.SubCategoryIds != null && ProductModel.SubCategoryIds.Count > 0)
+        {
+            subCatVals = ProductModel.SubCategoryIds;
+        }
+        if (ProductModel.CategoryIds != null && ProductModel.CategoryIds.Count > 0)
+        {
+            catVals = ProductModel.CategoryIds;
+        }
+        StateHasChanged();
+    }
+
+    async Task GetAllCategories()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.ShowSubcategories = true;
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<CategoryListBO>>>($"api/Product/GetAllMainAndSubCategories{Extensions.ConvertToQueryString(model)}", cts);
+
+        if (response.IsSuccess)
+        {
+            categories = response.Data;
+            if (categories.Count() > 0)
+            {
+                foreach (var cat in categories)
+                {
+                    allCats.Add(new DistinctFilterVals() { Id = cat.Id, Name = cat.CategoryName });
+
+                    if (cat.AllSubCategories.Count() > 0)
+                    {
+                        foreach (var sub in cat.AllSubCategories)
+                        {
+                            subCats.Add(new DistinctFilterVals() { Id = sub.Id, Name = sub.SubCategoryName });
+                        }
+                    }
+                }
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllFilters()
+    {
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<FiltersBO>>>($"api/Product/GetAllFilters?companyId={_state.CompanyId}", cts);
+
+        if (response.IsSuccess)
+        {
+            filters = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllUnits()
+    {
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<UnitOfMeasureBO>>>($"api/Product/GetAllUnits?companyId={_state.CompanyId}", cts);
+
+        if (response.IsSuccess)
+        {
+            units = response.Data;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void OnUOMChange(IEnumerable<long?> value)
+    {
+        ProductModel.UomIds = uomVals.ToList();
+        _search.RefreshSearch(ProductModel);
+    }
+
+    void OnCatChange(IEnumerable<long?> value)
+    {
+        ProductModel.SubCategoryIds = subCatVals != null ? subCatVals.ToList() : new();
+        ProductModel.CategoryIds = catVals != null ? catVals.ToList() : new();
+        _search.RefreshSearch(ProductModel);
+    }
+
+    void OnFilterChange(IEnumerable<int?> value)
+    {
+        ProductModel.FilterIds = filterVals.ToList();
+        _search.RefreshSearch(ProductModel);
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

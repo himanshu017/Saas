@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Components\Global\ModalPopup.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="wwwroot\scripts\initializePlugins.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="7.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.11" PrivateAssets="all" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Radzen.Blazor" Version="4.15.14" />
+    <PackageReference Include="SkiaSharp.Views.Blazor" Version="2.88.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AdminPanel\Shared\AdminPanel.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Pages\Account\ResetPassword.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="wwwroot\theme\images\ez-logo-dark.svg">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Components\Global\ModalPopup.razor" />
+  </ItemGroup>
+
+</Project>

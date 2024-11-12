@@ -1,0 +1,6 @@
+﻿@attribute [Authorize(Roles ="CompanyAdmin,SuperAdmin")]
+
+@inject IHttpService _http
+@inject IStateService _state
+@inject NotificationService _notify
+@inject DialogService _dialog

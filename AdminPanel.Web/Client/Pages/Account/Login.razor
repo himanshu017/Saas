@@ -1,0 +1,92 @@
+﻿@page "/Login"
+
+@inject CustomAuthenticationStateProvider _auth
+@inject NavigationManager _nav
+@inject IStateService _state
+
+<div class="user-form-card">
+    <div class="user-form-title">
+        <h2>welcome!</h2>
+        <p>Use your credentials to access</p>
+    </div>
+    <AlertMessage Model="alert" />
+    <div class="user-form-group">
+        @* <ul class="user-form-social">
+            <li><a href="#" class="facebook"><i class="fab fa-facebook-f"></i>login with facebook</a></li>
+            <li><a href="#" class="twitter"><i class="fab fa-twitter"></i>login with twitter</a></li>
+            <li><a href="#" class="google"><i class="fab fa-google"></i>login with google</a></li>
+            <li><a href="#" class="instagram"><i class="fab fa-instagram"></i>login with instagram</a></li>
+            </ul>
+            <div class="user-form-divider">
+            <p>or</p>
+            </div>*@
+        <EditForm Model="model" class="user-form" OnValidSubmit="ValidateUser">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <RadzenTextBox class="form-control" @bind-Value="model.UserName" Placeholder="Enter your email" AutoComplete=false />
+                <ValidationMessage For="() => model.UserName" />
+            </div>
+            <div class="form-group">
+                <RadzenPassword class="form-control" @bind-Value="model.Password" Placeholder="Enter your password" AutoComplete=false />
+                <ValidationMessage For="() => model.Password" />
+            </div>
+            <div class="form-button">
+                <button type="submit">login</button>
+                <p>Forgot your password?<a href="forgotpassword">reset here</a></p>
+            </div>
+
+        </EditForm>
+    </div>
+</div>
+
+<div class="user-form-remind">
+    <p>Don't have any account?<a href="register">register here</a></p>
+</div>
+
+@code {
+    LoginBO model = new() { DeviceType = "Web" };
+    AlertBO alert = new() { Visible = false, Type = "danger" };
+    private System.Security.Claims.ClaimsPrincipal user;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        user = (await authenticationState).User;
+        if (user.Identity.IsAuthenticated)
+        {
+            await _auth.Logout();
+        }
+    }
+
+    async Task ValidateUser()
+    {
+        try
+        {
+            loading.Start();
+            model.DomainName = _state.DomainName;
+            var res = await _auth.Login(model);
+
+            if (res.IsSuccess)
+            {
+                _nav.NavigateTo("/");
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = res.Message;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            loading.Stop();
+        }
+    }
+}

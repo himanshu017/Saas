@@ -1,0 +1,85 @@
+﻿@page "/History"
+
+@inject IHttpService _http
+@implements IDisposable
+
+<TitleBanner Title="Order History" />
+
+<div class="container">
+    <div class="col-lg-12">
+        <div class="table-scroll pb-4">
+            <RadzenDataGrid GridLines="DataGridGridLines.Both" Style="max-height:500px;" TItem="OrderDetailsBO" Data="orders">
+                <Columns>
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="OrderNumber" Title="Order #" TextAlign="TextAlign.Center" Width="110px"/>
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="CustomerName" Title="Customer" TextAlign="TextAlign.Start" />
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="CreatedOn" Title="Order Date" TextAlign="TextAlign.Center" Width="150px;">
+                        <Template Context="row">
+                            @($"{row.CreatedOn:dd/MM/yyyy}")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="DeliveryDate" Title="Delivery Date" TextAlign="TextAlign.Center" Width="150px;">
+                        <Template Context="row">
+                            @($"{row.DeliveryDate:dd/MM/yyyy}")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="OrderTotal" Title="Total" TextAlign="TextAlign.Right" Width="120px;">
+                        <Template Context="row">
+                            @(row.OrderTotal.ToPrice(_state.CurrencyInfo))
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Property="StatusDesc" Title="Status" TextAlign="TextAlign.Center" Width="120px;" />
+                    <RadzenDataGridColumn TItem="OrderDetailsBO" Title="Actions" TextAlign="TextAlign.Center" Width="150px;">
+                        <Template Context="row">
+                            <a class="view" href="OrderDetail?orderId=@row.OrderId" title="Order Details"><i class="fas fa-eye"></i></a>
+                            <a href="/api/Order/GetInvoicePdf?orderId=@row.OrderId" target="_blank"> <i class="fas fa-download"></i></a>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    GetOrderHistoryBO model = new();
+    IEnumerable<OrderDetailsBO> orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetOrderHistory();
+    }
+
+    async Task GetOrderHistory()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.UserId = _state.UserId;
+        model.CustomerId = _state.CustomerId;
+        model.AllUsers = false;
+
+        loading.Start();
+        try
+        {
+            var res = await _http.PostRequest<GenericResponse<IEnumerable<OrderDetailsBO>>>($"api/Order/GetOrderHistory", model, cts);
+            if (res.IsSuccess)
+            {
+                orders = res.Data;
+                StateHasChanged();
+            }
+            else
+            {
+                _notify.ErrorMsg(res.Message);
+            }
+        }
+        finally
+        {
+            loading.Stop();
+        }
+    }
+
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

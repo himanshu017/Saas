@@ -1,0 +1,145 @@
+﻿@page "/DeliveryRuns"
+
+<PageHeader Title="Delivery Runs" />
+<Loading @ref="loading" />
+
+<GridInsertButton Grid="grid" TItem="DeliveryRunBO" OnCreateItem="@(() => new DeliveryRunBO())" />
+<RadzenDataGrid TItem="DeliveryRunBO" @ref="grid" Data="@allRuns" RowUpdate="@AddEdit" RowCreate="@AddEdit" RowEdit="SetDays"
+                EditMode="DataGridEditMode.Single" Responsive="true">
+    <Columns>
+        <RadzenDataGridColumn TItem="DeliveryRunBO" Property="RunNo" Title="Delivery Run" Width="120px">
+            <Template Context="row">
+                <span>@row.RunNo</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenTextBox @bind-Value="row.RunNo" class="form-control" MaxLength="20" Name="Run" />
+                <RadzenRequiredValidator Component="Run" Text="Run No. is required" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="DeliveryRunBO" Property="DaysOfWeek" Title="Days">
+            <Template Context="row">
+                <span>@GetDaynames(row.DaysOfWeek)</span>
+            </Template>
+            <EditTemplate Context="row">
+                <RadzenCheckBoxList @bind-Value=@selectedValues TValue="string" Data="@StaticHelpers.DayNames" TextProperty="Value" ValueProperty="Key" Name="Runs"/>
+                <RadzenRequiredValidator Component="Runs" Text="Choose at least one delivery day" Popup="true" Style="position: fixed" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <GridControls TItem="DeliveryRunBO" Grid="grid" Width="115px" DeleteRow="DeleteRun" />
+    </Columns>
+</RadzenDataGrid>
+
+
+@code {
+    RadzenDataGrid<DeliveryRunBO> grid;
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    IEnumerable<DeliveryRunBO> allRuns;
+    Loading loading;
+    bool listing = true;
+    IEnumerable<string> selectedValues;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetRuns();
+    }
+
+    async Task GetRuns()
+    {
+        loading.ShowLoading();
+        allRuns = await _http.GetAllRecords<IEnumerable<DeliveryRunBO>>($"/common/GetDeliveryRuns?companyid={_state.CompanyId}");
+        loading.StopLoading();
+    }
+
+    async Task AddEdit(DeliveryRunBO row)
+    {
+        loading.ShowLoading();
+        if (row.Id == 0)
+        {
+            row.CreatedBy = _state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+            row.CompanyId = _state.CompanyId;
+        }
+        else
+        {
+            row.ModifiedBy = _state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+
+        row.DaysOfWeek = string.Join(",", selectedValues);
+
+        var res = await _http.PostRequest<BaseResponseBO>("/common/AddUpdateDeliveryRun", row);
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            await GetRuns();
+            selectedValues = null;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+
+        _notify.Notify(notification);
+
+        await InvokeAsync(StateHasChanged);
+        loading.StopLoading();
+    }
+
+    async Task DeleteRun(DeliveryRunBO row)
+    {
+        var confirm = await _dialog.Confirm("This will remove all customer references for this run. Are you sure?", $"Delete Delivery Run",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/common/DeleteDeliveryRun", row.Id);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                await GetRuns();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            notification.Summary = response.Message;
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    string GetDaynames(string daysOfWeek)
+    {
+        var res = "";
+        var days = daysOfWeek.Split(',');
+
+        foreach (var day in days)
+        {
+            res += StaticHelpers.DayNames[day] + ", ";
+        }
+
+        return res.Trim().TrimEnd(',');
+    }
+
+    void SetDays(DeliveryRunBO row)
+    {
+        if (row.Id > 0)
+        {
+            selectedValues = row.DaysOfWeek.Split(',');
+        }
+        else
+        {
+            selectedValues = null;
+        }
+    }
+}

@@ -1,0 +1,47 @@
+﻿@inherits LayoutComponentBase
+@inject IDomainService _domain
+<RadzenDialog />
+<RadzenNotification />
+<RadzenTooltip />
+<Loading />
+<ManageFavoriteListsAndItems />
+<Header />
+
+<NavMenu />
+
+<style>
+    :root {
+        --primary: @primaryColor;
+        --secondary: @secondaryColor;
+    }
+
+</style>
+
+<QuickView />
+
+@Body
+
+<NewsletterSubscription />
+
+<Footer />
+
+@code {
+    string primaryColor = "";
+    string secondaryColor = "";
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // subscribe to the event to set colors once they have been fetched from the database,
+        // since main layout is rendered before everything else.
+        _domain.OnDataSet += SetColor;
+        SetColor();
+    }
+
+    void SetColor()
+    {
+        primaryColor = $"{_state.PrimaryColor} !important";// "crimson !important";
+        secondaryColor = $"{_state.SecondaryColor} !important"; // "#ffcbda !important";
+    }
+
+    }

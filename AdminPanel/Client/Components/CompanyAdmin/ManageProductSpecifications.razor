@@ -1,0 +1,94 @@
+﻿@inject IHttpService _http
+
+<div>
+    <RadzenTemplateForm Data="model" TItem="ProductSpecificationBO" Submit="AddAttribute">
+        <div class="row mb-2">
+            <div class="col-md-1">
+                <RadzenLabel Text="Property" />
+            </div>
+            <div class="col-md-4">
+                <RadzenTextBox @bind-Value="@model.Property" Name="txtProp" class="w-100" />
+                <RadzenRequiredValidator Component="txtProp" Text="Property is required" />
+            </div>
+            <div class="col-md-1">
+                <RadzenLabel Text="Value" />
+            </div>
+            <div class="col-md-4">
+                <RadzenTextBox @bind-Value="@model.Value" Name="txtVal" class="w-100" />
+                <RadzenRequiredValidator Component="txtVal" Text="Value is required" />
+            </div>
+            <div class="col-2">
+                <RadzenButton Text="Add" ButtonStyle="ButtonStyle.Primary" class="w-100" ButtonType="ButtonType.Submit" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+</div>
+
+<div class="row mt-4">
+    <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Value</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in attributes)
+            {
+                <tr>
+                    <td>
+                        @item.Property
+                    </td>
+                    <td>
+                        @item.Value
+                    </td>
+                    <td align="center">
+                        <RadzenButton Icon="delete" Click="@(() => RemoveAttribute(item))" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<RadzenRow class="mt-5">
+    <RadzenColumn Size="12" class="text-center">
+        <RadzenButton Text="Back to product detail" Click="@(() => _dialog.Close(JsonConvert.SerializeObject(attributes)))" />
+    </RadzenColumn>
+</RadzenRow>
+@code {
+    [Parameter]
+    public string? ProductSpecificationAttribute { get; set; }
+
+    ProductSpecificationBO model = new();
+
+    List<ProductSpecificationBO>? attributes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (!string.IsNullOrEmpty(ProductSpecificationAttribute))
+        {
+            attributes = JsonConvert.DeserializeObject<List<ProductSpecificationBO>>(ProductSpecificationAttribute);
+        }
+    }
+
+    async Task AddAttribute()
+    {
+        if (attributes == null)
+            attributes = new();
+
+        attributes.Add(model);
+        model = new();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task RemoveAttribute(ProductSpecificationBO item)
+    {
+        attributes.Remove(item);
+        await InvokeAsync(StateHasChanged);
+    }
+}

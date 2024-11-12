@@ -1,0 +1,516 @@
+﻿@page "/Admin/CompanyConfig"
+@page "/Admin/CompanyConfig/{CompanyId:long}"
+@inject TooltipService tooltipService
+
+@attribute [Authorize(Roles = "SuperAdmin")]
+
+@inject HttpClient _httpClient
+@inject IStateService _state
+@inject NotificationService _notify
+
+
+<Loading @ref="loading" />
+
+@if (ShowCompanySelection ?? false)
+{
+    <PageHeader Title="Company Configration Settings" />
+
+    <div class="row px-4 mb-3">
+        <RadzenDropDown @bind-Value="@CompanyId" Data="@allCompanies" ValueProperty="CompanyId" TextProperty="DropDownText"
+                        Placeholder="Choose company" AllowClear="true" Change="@GetCompanyConfig" />
+    </div>
+}
+
+@if (CompanyId > 0)
+{
+    <div class="py-2">
+        <EditForm Model="model" OnValidSubmit="@AddUpdateConfiguration">
+            <DataAnnotationsValidator />
+            <div class="row px-3">
+                <div class="col-md-4 p-3">
+                    <RadzenCard class="mb-4">
+                        <h4 class="mb-4">Choose order file output type:</h4>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.IsCSVGeneration" Name="IsCSVGeneration" TValue="bool" Disabled="@(!ShowToCompanyAdmin("IsCSVGeneration"))">
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is CSV Generation" Component="IsCSVGeneration" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsCSVGeneration"))" />
+                        </div>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.IsExcelGeneration" Name="IsExcelGeneration" TValue="bool" Disabled=@(!ShowToCompanyAdmin("IsExcelGeneration"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is Excel Generation" Component="IsExcelGeneration" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsExcelGeneration"))" />
+                        </div>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.IsPDFGeneration" Name="IsPDFGeneration" TValue="bool" Disabled=@(!ShowToCompanyAdmin("IsPDFGeneration"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is PDF Generation" Component="IsPDFGeneration" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsPDFGeneration"))" />
+                        </div>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.IsXMLGeneration" Name="IsXMLGeneration" TValue="bool" Disabled=@(!ShowToCompanyAdmin("IsXMLGeneration"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is XML Generation" Component="IsXMLGeneration" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsXMLGeneration"))" />
+                        </div>
+                    </RadzenCard>
+                    <RadzenCard>
+                        <h4 class="mb-4">Stripe configuration:</h4>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.EnableStripePayment" Name="EnableStripePayment" TValue="bool" Disabled=@(!ShowToCompanyAdmin("EnableStripePayment"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Enable Stripe Payment" Component="EnableStripePayment" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"EnableStripePayment"))" />
+                        </div>
+                        @if (ShowToCompanyAdmin("StripePublicKey"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Public Key" Component="IsCSVGeneration" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"IsCSVGeneration"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.StripePublicKey" Name="StripePublicKey" class="form-control" MaxLength="200" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("StripeApiKey"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="API Key" Component="StripeApiKey" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"StripeApiKey"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.StripeApiKey" Name="StripeApiKey" class="form-control" MaxLength="200" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("StripeConnectedAccountID"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Connected Account ID" Component="StripeConnectedAccountID" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"StripeConnectedAccountID"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.StripeConnectedAccountID" Name="StripeConnectedAccountID" class="form-control" MaxLength="200" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("StripePortalFeePercentageFor50AndBelow"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Portal Fee Percentage 50 & Below" Component="StripePortalFeePercentageFor50AndBelow" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"StripePortalFeePercentageFor50AndBelow"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.StripePortalFeePercentageFor50AndBelow" Name="StripePortalFeePercentageFor50AndBelow" class="form-control" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("StripePortalFeeFlatAbove50"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Portal Flat Fee Above 50" Component="StripePortalFeeFlatAbove50" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"StripePortalFeeFlatAbove50"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.StripePortalFeeFlatAbove50" Name="StripePortalFeeFlatAbove50" class="form-control" />
+                                </div>
+                            </div>
+                        }
+                    </RadzenCard>
+                    <RadzenCard class="mt-4">
+                        <h4 class="mb-4">Twilio SMS Configuration:</h4>
+                        <div>
+                            <RadzenCheckBox @bind-Value="@model.EnableTwilio" Name="EnableTwilio" TValue="bool" Disabled=@(!ShowToCompanyAdmin("EnableTwilio"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Enable Twilio" Component="EnableTwilio" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"EnableTwilio"))" />
+                        </div>
+
+                        @if (ShowToCompanyAdmin("TwilioAccountSid"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Account Sid" Component="TwilioAccountSid" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"TwilioAccountSid"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.TwilioAccountSid" Name="TwilioAccountSid" class="form-control" MaxLength="50" />
+                                    <ValidationMessage For="() => model.TwilioAccountSid" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("TwilioAuthToken"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Auth Token" Component="TwilioAuthToken" class="mb-1" MouseEnter="@(args => ShowTooltip(args,"TwilioAuthToken"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.TwilioAuthToken" Name="TwilioAuthToken" class="form-control" MaxLength="256" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("TwilioPhoneNumber"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="PhoneNumber" Component="TwilioPhoneNumber" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"TwilioPhoneNumber"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.TwilioPhoneNumber" Name="TwilioPhoneNumber" class="form-control" MaxLength="13" />
+                                    <ValidationMessage For="() => model.TwilioPhoneNumber" />
+                                </div>
+                            </div>
+                        }
+                    </RadzenCard>
+                    <RadzenCard class="mt-4">
+                        <h4 class="mb-4">Notification Settings:</h4>
+                        <div class="mb-3">
+                            <RadzenCheckBox @bind-Value="@model.HasPushNotifications" Name="HasPushNotifications" TValue="bool" Disabled=@(!ShowToCompanyAdmin("HasPushNotifications"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Allow Push Notifications" Component="HasPushNotifications" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"HasPushNotifications"))" />
+                        </div>
+                        @if (ShowToCompanyAdmin("FcmSenderIdMobile"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="MOBILE Sender Id" Component="FcmSenderIdMobile" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FcmSenderIdMobile"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FcmSenderIdMobile" Name="FcmSenderIdMobile" class="form-control" MaxLength="15" />
+                                    <ValidationMessage For="() => model.FcmSenderIdMobile" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FcmServerKeyMobile"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="MOBILE Server Key" Component="FcmServerKeyMobile" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FcmServerKeyMobile"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FcmServerKeyMobile" Name="FcmServerKeyMobile" class="form-control" MaxLength="200" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FcmSenderIdWeb"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="WEB Sender Id" Component="FcmSenderIdWeb" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FcmSenderIdWeb"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FcmSenderIdWeb" Name="FcmSenderIdWeb" class="form-control" MaxLength="15" />
+                                    <ValidationMessage For="() => model.FcmSenderIdWeb" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FcmServerKeyWeb"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="WEB Server Key" Component="FcmServerKeyWeb" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FcmServerKeyWeb"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FcmServerKeyWeb" Name="FcmServerKeyWeb" class="form-control" MaxLength="200" />
+                                </div>
+                            </div>
+                        }
+                    </RadzenCard>
+                </div>
+                <div class="col-md-4 p-3">
+                    <RadzenCard>
+                        <h4 class="mb-4">FTP upload details:</h4>
+                        <div class="mb-3">
+                            <RadzenCheckBox @bind-Value="@model.IsFTPUploading" Name="IsFTPUploading" TValue="bool" Disabled=@(!ShowToCompanyAdmin("IsFTPUploading"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is FTP Uploading" Component="IsFTPUploading" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsFTPUploading"))" />
+                        </div>
+                        @if (ShowToCompanyAdmin("FTPUrl"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="FTP Url" Component="FTPUrl" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FTPUrl"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FTPUrl" Name="FTPUrl" class="form-control" MaxLength="150" />
+                                    <ValidationMessage For="() => model.FTPUrl" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FTPUserName"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="FTP UserName" Component="FTPUserName" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FTPUserName"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FTPUserName" Name="FTPUserName" class="form-control" MaxLength="50" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FTPPassword"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="FTP Password" Component="FTPPassword" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FTPPassword"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FTPPassword" Name="FTPPassword" class="form-control" MaxLength="50" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("FTPUsePassive"))
+                        {
+                            <div>
+                                <RadzenCheckBox @bind-Value="@model.FTPUsePassive" Name="FTPUsePassive" TValue="bool">
+                                </RadzenCheckBox>
+                                <RadzenLabel Text="FTP UsePassive" Component="FTPUsePassive" class="chklabel" />
+                            </div>
+                        }
+                    </RadzenCard>
+                    <RadzenCard class="mt-4">
+                        <h4 class="mb-4">General Settings:</h4>
+                        <div class="mb-3">
+                            <RadzenCheckBox @bind-Value="@model.IsLive" Name="IsLive" TValue="bool" Disabled=@(!ShowToCompanyAdmin("IsLive"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Is Live" Component="IsLive" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsLive"))" />
+                        </div>
+                        <div class="mb-3">
+                            <RadzenCheckBox @bind-Value="@model.SendCustomerAndRepMail" Name="SendCustomerAndRepMail" TValue="bool" Disabled=@(!ShowToCompanyAdmin("SendCustomerAndRepMail"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Send Customer And RepMail" Component="SendCustomerAndRepMail" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"SendCustomerAndRepMail"))" />
+                        </div>
+                        <div class="mb-3">
+                            <RadzenCheckBox @bind-Value="@model.SplitOrders" Name="SplitOrders" TValue="bool" Disabled=@(!ShowToCompanyAdmin("SplitOrders"))>
+                            </RadzenCheckBox>
+                            <RadzenLabel Text="Allow Order Splitting" Component="SplitOrders" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"SplitOrders"))" />
+                        </div>
+                        @if (ShowToCompanyAdmin("GoogleAPIKey"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Google API Key" Component="GoogleAPIKey" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"GoogleAPIKey"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.GoogleAPIKey" Name="GoogleAPIKey" class="form-control" MaxLength="250" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("OrderFilePrefix"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Order File Prefix" Component="OrderFilePrefix" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"OrderFilePrefix"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.OrderFilePrefix" Name="OrderFilePrefix" class="form-control" MaxLength="250" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("InvoiceHeading"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Invoice Heading" Component="InvoiceHeading" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"InvoiceHeading"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.InvoiceHeading" Name="InvoiceHeading" class="form-control" MaxLength="250" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("IsAttributeEnabled"))
+                        {
+                            <div class="mb-3">
+                                <RadzenCheckBox @bind-Value="@model.IsAttributeEnabled" Name="IsAttributeEnabled" />
+                                <RadzenLabel Text="Enable Product Attributes" Component="IsAttributeEnabled" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"IsAttributeEnabled"))" />
+                            </div>
+                        }
+                    </RadzenCard>
+
+                </div>
+                <div class="col-md-4 p-3">
+                    <RadzenCard>
+                        <h4 class="mb-4">Email configuration:</h4>
+                        @if (ShowToCompanyAdmin("FromEmailId"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="From Email" Component="FromEmailId" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FromEmailId"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FromEmailId" Name="FromEmailId" class="form-control" MaxLength="100" />
+                                    <ValidationMessage For="() => model.FromEmailId" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("AdminEmail"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Admin Email" Component="AdminEmail" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"AdminEmail"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.AdminEmail" Name="AdminEmail" class="form-control" MaxLength="100" />
+                                    <ValidationMessage For="() => model.AdminEmail" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("InvoiceEmail"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Invoice Email" Component="InvoiceEmail" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"InvoiceEmail"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.InvoiceEmail" Name="InvoiceEmail" class="form-control" MaxLength="100" />
+                                    <ValidationMessage For="() => model.InvoiceEmail" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("SalesDepEmail"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Sales Email" Component="SalesDepEmail" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"SalesDepEmail"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.SalesDepEmail" Name="SalesDepEmail" class="form-control" MaxLength="100" />
+                                    <ValidationMessage For="() => model.SalesDepEmail" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("OrderIssueEmail"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Order Issue Reporting Email" Component="OrderIssueEmail" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"OrderIssueEmail"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.OrderIssueEmail" Name="OrderIssueEmail" class="form-control" MaxLength="250" />
+                                </div>
+                            </div>
+                        }
+                    </RadzenCard>
+                    <RadzenCard class="mt-4">
+                        <h4 class="mb-4">Social Media Links:</h4>
+                        @if (ShowToCompanyAdmin("FacebookLink"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Facebook" Component="FacebookLink" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"FacebookLink"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.FacebookLink" Name="FacebookLink" class="form-control" MaxLength="256" />
+                                    <ValidationMessage For="() => model.FacebookLink" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("InstagramLink"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Instagram" Component="InstagramLink" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"InstagramLink"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.InstagramLink" Name="InstagramLink" class="form-control" MaxLength="256" />
+                                    <ValidationMessage For="() => model.InstagramLink" />
+                                </div>
+                            </div>
+                        }
+                        @if (ShowToCompanyAdmin("TwitterLink"))
+                        {
+                            <div class="row mb-3">
+                                <RadzenLabel Text="Twitter" Component="TwitterLink" class="chklabel" MouseEnter="@(args => ShowTooltip(args,"TwitterLink"))" />
+                                <div>
+                                    <RadzenTextBox @bind-Value="@model.TwitterLink" Name="TwitterLink" class="form-control" MaxLength="256" />
+                                    <ValidationMessage For="() => model.TwitterLink" />
+                                </div>
+                            </div>
+                        }
+                    </RadzenCard>
+                </div>
+            </div>
+            <div class="row px-4">
+                <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Text="Save Changes" />
+            </div>
+        </EditForm>
+    </div>
+}
+@code {
+    [Parameter] public long? CompanyId { get; set; } = 0;
+    [Parameter] public bool? ShowCompanySelection { get; set; } = true;
+    Loading loading;
+
+    CompanyConfigBO model = new();
+    IEnumerable<CompanyModelBO> allCompanies;
+    CompanyConfigSettingsBO configs = new();
+
+    List<FeatureConfigDescBO> companyConfigDesc = new List<FeatureConfigDescBO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetFeatureDescriptions();
+        await GetAllCompanies();
+
+        if (CompanyId > 0)
+        {
+            await GetCompanyConfig();
+        }
+    }
+
+    async Task GetFeatureDescriptions()
+    {
+        var desc = await _httpClient.GetFromJsonAsync<FeatureDescriptionBO>($"package/GetFeatureDescriptions");
+
+        if (desc.IsSuccess)
+        {
+            // bind the dictionary with the values
+            companyConfigDesc = JsonConvert.DeserializeObject<List<FeatureConfigDescBO>>(desc.CompanyConfigDescription);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllCompanies()
+    {
+        allCompanies = await _httpClient.GetFromJsonAsync<IEnumerable<CompanyModelBO>>($"Company/GetAllCompanies");
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetCompanyConfig()
+    {
+        configs = await _httpClient.GetFromJsonAsync<CompanyConfigSettingsBO>($"Company/GetCompanyConfiguration?companyId={CompanyId}");
+
+        if (!string.IsNullOrEmpty(configs.ConfigSettings))
+        {
+            model = JsonConvert.DeserializeObject<CompanyConfigBO>(configs.ConfigSettings);
+        }
+        else
+        {
+            model = new();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddUpdateConfiguration()
+    {
+        loading.ShowLoading();
+        configs.CompanyId = (long)CompanyId;
+        configs.ConfigSettings = JsonConvert.SerializeObject(model);
+
+        if (configs.IsUpdate)
+        {
+            configs.ModifiedBy = _state.UserId;
+            configs.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            configs.CreatedBy = _state.UserId;
+            configs.CreatedOn = DateTime.UtcNow;
+        }
+
+        var res = await _httpClient.PostAsJsonAsync($"Company/AddUpdateConfigSettings", configs);
+
+        if (res.IsSuccessStatusCode)
+        {
+            _notify.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Configuration settings updated!",
+                    Duration = 4000
+                });
+        }
+        else
+        {
+            _notify.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Error updating settings!",
+                    Duration = 4000
+                });
+        }
+
+        loading.StopLoading();
+    }
+
+    async void ShowTooltip(ElementReference elementReference, string key)
+    {
+        TooltipOptions options = new TooltipOptions()
+            {
+                Position = TooltipPosition.Top,
+                Duration = 4000
+            };
+
+        string description = "";
+        var desc = companyConfigDesc.FirstOrDefault(x => x.Name == key);
+        if (desc != null)
+        {
+            description = desc.Description;
+            await Task.Delay(300);
+            tooltipService.Open(elementReference, description, options);
+        }
+        else
+        {
+            tooltipService.Close();
+        }
+    }
+
+    bool ShowToCompanyAdmin(string name)
+    {
+        bool val = true;
+        if (_state.Role == UserTypes.CompanyAdmin.ToString())
+        {
+            val = companyConfigDesc.FirstOrDefault(x => x.Name == name)?.Value ?? false;
+        }
+        return val;
+    }
+}

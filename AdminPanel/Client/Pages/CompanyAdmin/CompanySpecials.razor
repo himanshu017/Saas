@@ -1,0 +1,66 @@
+﻿@page "/Specials"
+@inject IStateService _state
+@inject IHttpService _http
+@inject NotificationService _notify
+
+<PageHeader Title="Add / Update Company Specials" />
+
+<MultiSelection IsCustomer="false" OnSelection="SetValues" PreviousSelection="previousSelection" />
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    public IEnumerable<long>? previousSelection { get; set; }
+    List<CommonDropdownBO> selectedValues = new();
+    CompanySpecialsBO model = new();
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        model.CompanyId = _state.CompanyId;
+        model.UserId = _state.UserId;
+
+        await GetCompanySpecials();
+    }
+
+    async Task GetCompanySpecials()
+    {
+        var result = (await _http.GetAllRecords<GetSpecialsResponse>($"/Product/GetCompanySpecials?companyId={_state.CompanyId}"));
+        if (result.IsSuccess)
+        {
+            previousSelection = result.ProductIds;
+        }
+        else
+        {
+            previousSelection = null;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    async Task SetValues(IEnumerable<long> selected)
+    {
+        model.ProductIds = selected;
+        await AddUpdateCompanySpecials();
+        StateHasChanged();
+    }
+
+    async Task AddUpdateCompanySpecials()
+    {
+        var result = await _http.PostRequest<BaseResponseBO>($"/product/AddUpdateCompanySpecials", model);
+
+        if (result.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = "Company Specials Updated successfully.";
+            _notify.Notify(notification);
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = "Error while updating company specials.";
+            notification.Detail = result.Message;
+            _notify.Notify(notification);
+            Console.WriteLine($"Error: {result.Message}");
+        }
+    }
+}

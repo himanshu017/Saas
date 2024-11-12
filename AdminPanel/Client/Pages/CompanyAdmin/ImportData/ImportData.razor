@@ -1,0 +1,257 @@
+﻿@page "/Import"
+
+@attribute [Authorize(Roles = "CompanyAdmin,SuperAdmin")]
+@inject DialogService dialogService
+@inject NotificationService _notify
+@inject IStateService _state
+@inject IHttpService _http
+
+<PageHeader Title="Import">
+    <ChildContent>
+    </ChildContent>
+</PageHeader>
+<Loading @ref="loading" />
+
+<EditForm Model="@Model" OnValidSubmit="@SaveData">
+    <DataAnnotationsValidator />
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Select Import For" />
+        </div>
+        <div class="col-md-3">
+            <InputSelect Value="@Model.ImportFor" ValueExpression="@(()=>Model.ImportFor)" class="form-control" ValueChanged="@((string val) => OnchangeImportFor(val))">
+
+                @foreach (var valueenum in Enum.GetValues(typeof(ImportFor)))
+                {
+
+                    <option value="@valueenum">@valueenum</option>
+                }
+            </InputSelect>
+        </div>
+
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Select Import For" />
+        </div>
+        <div class="col-md-3">
+            <RadzenDropDown Data="@allmaping" class="form-control" @bind-Value="Model.MappingId" TextProperty="Description" ValueProperty="Id" />
+        </div>
+
+    </div>
+    <div class="row mb-2">
+        <div class="align-items-center d-flex col-md-3">
+            <RadzenLabel Text="Upload File" />
+        </div>
+        <div class="col-md-3">
+            <InputFile OnChange="OnInputFileChange" Accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" id="img-upload" class="form-control" />
+
+            @if (list.Count > 0)
+            {
+                <div class="card" style="width:30rem;">
+                    <div class="card-body">
+                        @foreach (var file in list)
+                        {
+                            <a href="#" target="_blank"><i class="fa fa-3x fa-light fa-file-excel text-danger"></i></a>
+                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Click="@(args => RemoveImage(file))" />
+                            <RadzenButton ButtonStyle="ButtonStyle.Secondary" Text="View Mapping" Click="@(args => OpenMapping())" />
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+    <div class="d-flex align-items-center">
+        <RadzenButton Text="Submit" ButtonStyle="ButtonStyle.Secondary" ButtonType="ButtonType.Submit" class="ms-auto" />
+    </div>
+
+</EditForm>
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    [Parameter]
+    public ImportBaseClass Model { get; set; } = new();
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    Loading loading;
+    IEnumerable<CommonDropdownBO> allenums;
+    IEnumerable<CommonDropdownBO> allmaping;
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile> selectedFiles;
+    List<FileViewModel> list = new List<FileViewModel>();
+    byte[] excelbyte;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        //await GetAllMapping();
+    }
+
+    async Task GetImportType()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task SaveData()
+    {
+        if (Model.bytearray == null)
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = "Please upload file.";
+            _notify.Notify(notification);
+            return;
+        }
+        else if (string.IsNullOrEmpty(Model.ImportFor))
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = "Please select Import Type.";
+            _notify.Notify(notification);
+            return;
+        }
+
+        loading.ShowLoading();
+        Model.CompanyId = _state.CompanyId;
+        var finalResult = await _http.PostRequest<BaseResponseBO>("/Import/ImportExcelData", Model);
+        loading.StopLoading();
+        if (finalResult.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = finalResult.Message;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = finalResult.Message;
+        }
+        _notify.Notify(notification);
+        await InvokeAsync(StateHasChanged);
+        // loading.StopLoading();
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+
+        selectedFiles = e.GetMultipleFiles();
+        // Message = $"{selectedFiles.Count} file(s) selected";
+        if (selectedFiles.Count > 1)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = "Please select only one files";
+            _notify.Notify(notification);
+            // document.getElementById("img-upload").value = "";
+            return;
+        }
+        if (list.Count == 1 && selectedFiles.Count > 0)
+        {
+            notification.Severity = NotificationSeverity.Warning;
+            notification.Summary = "Remove file and upload new file.";
+            _notify.Notify(notification);
+            // document.getElementById("img-upload").value = "";
+            return;
+        }
+        var maxAllowedFiles = 2;
+
+        if ((selectedFiles.Count == 1 && list.Count == 1))
+        {
+            list = new List<FileViewModel>();
+        }
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            if (file.Size > 5242880)
+            {
+                notification.Severity = NotificationSeverity.Warning;
+                notification.Summary = "file size should be less than 5 MB";
+                _notify.Notify(notification);
+                // document.getElementById("img-upload").value = "";
+                return;
+            }
+            Stream stream = file.OpenReadStream(maxAllowedSize: 5242880);
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            stream.Close();
+
+            excelbyte = ms.ToArray();
+
+            
+
+            FileViewModel fileViewModel = new FileViewModel();
+            fileViewModel.Name = file.Name;
+            fileViewModel.Size = ms.Length;
+            list.Add(fileViewModel);
+
+        }
+        this.StateHasChanged();
+    }
+
+    private void RemoveImage(FileViewModel file)
+    {
+        list.Remove(file);
+    }
+
+    private async void OpenMapping()
+    {
+        await callModel(excelbyte);
+    }
+
+    private async Task callModel(byte[] excelbyteval)
+    {
+        loading.ShowLoading();
+        ImportBaseClass excelmodel = new ImportBaseClass();
+
+        excelmodel.bytearray = excelbyteval;
+        excelmodel.MappingId = Model.MappingId;
+        excelmodel.ImportFor = Model.ImportFor;
+        excelmodel.FileList = list;
+        var res = await _http.PostRequest<ImportBaseClass>("/Import/ReadExcelFile", excelmodel);
+
+        if (Model.MappingFields != null)
+        {
+            res.MappingFields = Model.MappingFields;
+            res.MappingTitle = Model.MappingTitle;
+        }
+
+        loading.StopLoading();
+        var response = await dialogService.OpenAsync<ImportMapping>($"Import Mapping",
+            new Dictionary<string, object>() {
+                                        { "Model", res },
+                                                                                                                            },
+            new DialogOptions()
+                {
+                    Width = "75%",
+                });
+
+        if (response != null)
+        {
+            Model.MappingFields = response.MappingFields;
+            Model.bytearray = excelbyteval;
+            Model.MappingTitle = response.MappingTitle;
+            Model.ImportedColumns = res.ImportedColumns;
+            Model.TableColumns = res.TableColumns;
+            Model.ImportedFileName = res.ImportedFileName;
+            Model.FileList = list;
+
+        }
+    }
+
+    async Task GetAllMapping()
+    {
+        var result = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/Import/GetImportedMapping?companyId={_state.CompanyId}&Importfor={Model.ImportFor}");
+        if (result.Count() > 0)
+        {
+            allmaping = result;
+        }
+        else
+        {
+            allmaping = null;
+        }
+    }
+
+    private async void OnchangeImportFor(string value)
+    {
+        Model.MappingFields = null;
+        Model.MappingTitle = string.Empty;
+        Model.ImportFor = value;
+        await GetAllMapping();
+        await InvokeAsync(StateHasChanged);
+    }
+}

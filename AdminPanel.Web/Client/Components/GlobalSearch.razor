@@ -1,0 +1,73 @@
+﻿@inject ISearchService _search
+@implements IDisposable
+@inject NavigationManager _nav
+@inject IJSRuntime jsRuntime
+
+<form class="header-form" @onsubmit="Enter">
+    @if (!isSubscribed)
+    {
+        <input type="text" placeholder="Search anything..." @bind-value="searchText">
+        <button @onclick="OnGlobalSearch" type="button"><i class="fas fa-search"></i></button>
+    }
+    else
+    {
+        <input type="text" placeholder="Search this page..." @bind-value="searchText">
+        <button @onclick="OnSearch" type="button"><i class="fas fa-search"></i></button>
+    }
+</form>
+
+@code {
+    string searchText;
+    bool isSubscribed = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _search.SetSubscription += SetSubscriptionFlag;
+        _search.ClearSearchText += Clear;
+        await Task.Delay(50);
+        await jsRuntime.InvokeVoidAsync("ResponsiveSearchBar");
+    }
+
+    // called from the component that subscribed to the textbox on change event
+    void SetSubscriptionFlag(bool value)
+    {
+        isSubscribed = value;
+        StateHasChanged();
+    }
+
+    void OnGlobalSearch()
+    {
+        _search.SetSearchText(searchText);
+        StateHasChanged();
+    }
+
+    void OnSearch()
+    {
+        _search.SetSearchText(searchText);
+        StateHasChanged();
+    }
+
+    public void Enter()
+    {
+        if (_nav.Uri.IndexOf("earch") == -1 && !isSubscribed)
+        {
+            _nav.NavigateTo($"/Search?val={searchText}");
+        }
+        else
+        {
+            _search.SetSearchText(searchText);
+        }
+    }
+
+    public void Clear()
+    {
+        searchText = "";
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _search.SetSubscription -= SetSubscriptionFlag;
+    }
+}

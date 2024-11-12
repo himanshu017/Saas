@@ -1,0 +1,210 @@
+﻿@page "/Admin/StatusTypes"
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@implements IDisposable
+@inject IStateService _state
+
+<PageHeader Title="Status Types & Description" />
+
+<AlertMessage AlertModel="@alert" />
+
+<RadzenCard>
+    <RadzenTabs RenderMode="TabRenderMode.Client">
+        <Tabs>
+            <RadzenTabsItem Text="Status Types">
+                <GridInsertButton Grid="grid" TItem="CommonTypeBO" OnCreateItem="@(() => new CommonTypeBO())" Disabled="@(!_state.AllowMasterTableEditing && disabled)" />
+
+                <RadzenDataGrid @ref="grid" TItem="CommonTypeBO" Data="@allTypes"
+                                EditMode="DataGridEditMode.Single" RowUpdate="@AddEdit" RowCreate="@AddEdit">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CommonTypeBO" Property="Type" Title="Status Types">
+                            <Template Context="row">
+                                <span>@row.TypeDesc</span>
+                            </Template>
+                            <EditTemplate Context="row">
+                                <RadzenTextBox @bind-Value="row.TypeDesc" class="form-control" MaxLength="100" Name="Type" />
+                                <RadzenRequiredValidator Component="Type" Text="Status type is required" Popup="true" Style="position: absolute" />
+                            </EditTemplate>
+                        </RadzenDataGridColumn>
+
+                        <GridControls TItem="CommonTypeBO" Grid="grid" DeleteRow="Delete" Width="120px" OnAction="@(() => disabled = false)"
+                            AllowEdit="@_state.AllowMasterTableEditing" AllowDelete="@_state.AllowMasterTableEditing" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Status Description">
+                <GridInsertButton Grid="statusGrid" TItem="StatusListBO" OnCreateItem="@(() => new StatusListBO())" Disabled="@((statusTypeid == 0 || !_state.AllowMasterTableEditing) && disabled)">
+                    <RadzenDropDown Placeholder="Choose Status Type" AllowClear="true" Name="StatusType"
+                                    @bind-Value="statusTypeid" Data="@allTypes" TextProperty="TypeDesc" ValueProperty="Id" Change="OnChange" />
+
+                </GridInsertButton>
+
+                <RadzenDataGrid @ref="statusGrid" TItem="StatusListBO" Data="@allStatuses"
+                                EditMode="DataGridEditMode.Single" RowUpdate="@AddEditStatus" RowCreate="@AddEditStatus">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="StatusListBO" Property="StatusDesc" Title="Status Description">
+                            <Template Context="row">
+                                <span>@row.StatusDesc</span>
+                            </Template>
+                            <EditTemplate Context="row">
+                                <RadzenTextBox @bind-Value="row.StatusDesc" class="form-control" MaxLength="100" Name="Status" />
+                                <RadzenRequiredValidator Component="Status" Text="Status is required" Popup="true" Style="position: absolute" />
+                            </EditTemplate>
+                        </RadzenDataGridColumn>
+
+                        <GridControls TItem="StatusListBO" Grid="statusGrid" DeleteRow="DeleteStatus" Width="120px" OnAction="@(() => disabled = false)"
+                                      AllowEdit="@_state.AllowMasterTableEditing" AllowDelete="@_state.AllowMasterTableEditing" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenCard>
+
+@code {
+    // 👇 Create the CancellationTokenSource
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    RadzenDataGrid<CommonTypeBO>? grid;
+    RadzenDataGrid<StatusListBO>? statusGrid;
+
+    IEnumerable<CommonTypeBO> allTypes;
+    IEnumerable<StatusListBO> allStatuses;
+    AlertBO alert = new();
+    byte statusTypeid;
+    bool disabled = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAll();
+    }
+
+    async Task GetAll()
+    {
+        byte typeId = (byte)CommonTypes.StatusType;
+        allTypes = await _httpClient.GetFromJsonAsync<IEnumerable<CommonTypeBO>>($"MasterTables/GetAll?typeId={typeId}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEdit(CommonTypeBO row)
+    {
+        if (!row.IsStatus)
+        {
+            row.TypeId = (byte)CommonTypes.StatusType;
+        }
+        var request = await _httpClient.PostAsJsonAsync("MasterTables/AddUpdate", row, cts.Token);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                if (row.IsStatus)
+                {
+                    await GetAllStatuses(row.TypeId);
+                    await statusGrid.Reload();
+                }
+                else
+                {
+                    await GetAll();
+                    await grid.Reload();
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(CommonTypeBO row)
+    {
+        if (!row.IsStatus)
+        {
+            row.TypeId = (byte)CommonTypes.StatusType;
+        }
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.TypeDesc}",
+                      new ConfirmOptions()
+                          {
+                              OkButtonText = "Yes",
+                              CancelButtonText = "No"
+                          });
+
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("MasterTables/Delete", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    if (row.IsStatus)
+                    {
+                        await GetAllStatuses(row.TypeId);
+                        await statusGrid.Reload();
+                    }
+                    else
+                    {
+                        await GetAll();
+                        await grid.Reload();
+                    }
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+        }
+    }
+
+    async Task AddEditStatus(StatusListBO row)
+    {
+        var model = new CommonTypeBO()
+            {
+                IsStatus = true,
+                Id = row.Id,
+                TypeDesc = row.StatusDesc,
+                TypeId = statusTypeid
+            };
+
+        await AddEdit(model);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteStatus(StatusListBO row)
+    {
+        var model = new CommonTypeBO()
+            {
+                IsStatus = true,
+                Id = row.Id,
+                TypeDesc = row.StatusType
+            };
+
+        await Delete(model);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllStatuses(byte id)
+    {
+        allStatuses = await _httpClient.GetFromJsonAsync<IEnumerable<StatusListBO>>($"MasterTables/GetStatusById?id={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnChange(object value)
+    {
+        await GetAllStatuses((byte)value);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // 👇 Cancel the token
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

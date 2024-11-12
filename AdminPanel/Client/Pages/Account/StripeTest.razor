@@ -1,0 +1,45 @@
+﻿@page "/Stripe"
+@inject HttpClient _http
+@inject NavigationManager _nav
+
+@if (!string.IsNullOrEmpty(status))
+{
+    @($"Your payment is :{status}")
+}
+
+<div class="card-body p-5 py-3">
+    <RadzenTextBox @bind-Value="amount" />
+    <RadzenButton ButtonType="ButtonType.Button" Click="MakePayment" />
+</div>
+
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? status { get; set; }
+
+    string amount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    async Task MakePayment()
+    {
+        var request = await _http.PostAsJsonAsync("Auth/MakePayment", amount);
+
+        if (request.IsSuccessStatusCode)
+        {
+            var res = JsonConvert.DeserializeObject<GenericPagedResponse<string>>(await request.Content.ReadAsStringAsync());
+            if (res.IsSuccess)
+            {
+                _nav.NavigateTo(res.Data);
+            }
+            else
+            {
+                Console.WriteLine(res.Message);
+            }
+        }
+    }
+}

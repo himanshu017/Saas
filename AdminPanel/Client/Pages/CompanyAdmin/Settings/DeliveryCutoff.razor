@@ -1,0 +1,210 @@
+﻿@page "/Cutoff"
+<PageHeader Title="Delivery Cutoff" />
+<Loading @ref="loading" />
+<RadzenCard>
+    <RadzenTemplateForm TItem="DeliveryCutoffBO" Data="model" Submit="UpdateCutoffDetails">
+        <div class="row mb-3">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Cutoff Type" />
+            </div>
+            <div class="col-md-3">
+                <RadzenDropDown Data="cutoffTypes" Placeholder="- select Cutoff Type -" class="w-100"
+                                @bind-Value="cutoffTypeId" TextProperty="Description" ValueProperty="Id" Change="OnTypeChange" />
+            </div>
+        </div>
+        @if (cutoffTypeId > 0)
+        {
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Enable Cutoff" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenSwitch @bind-Value="model.IsCutoffEnabled" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Permit Same Day" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenSwitch @bind-Value="model.IsSameDayDelivery" Change="CalculateDate" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Limit dates to 1 month" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenSwitch @bind-Value="model.IsLimitDatesTo1Month" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Cutoff Time" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="selectedTimeSpan" ShowTime="true" TimeOnly="true" HourFormat="12"
+                                  DateFormat="h:mm tt" Class="w-100" Change="OnTimeChange" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Cutoff Date" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="model.CutoffDate" DateFormat="dd/MM/yyyy" Class="w-100" ReadOnly="true" />
+                </div>
+                <div class="col-md-4">
+                    @if (dateChanged)
+                    {
+                        <span class="text-danger">You delivery date has changed.</span>
+                    }
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Daily Limit" />
+                </div>
+                <div class="col-md-3">
+                    <RadzenNumeric TValue="int" Min="0" @bind-Value="model.DailyOrderLimit" Class="w-100" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Permitted Days" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenCheckBoxList @bind-Value=@selectedValues Change="CalculateDate"
+                                    TValue="string" Data="@StaticHelpers.DayNames" TextProperty="Value" ValueProperty="Key" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-2">
+                    <RadzenButton Text="Update" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" class="w-100" />
+                </div>
+            </div>
+        }
+    </RadzenTemplateForm>
+</RadzenCard>
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    Loading loading;
+    DeliveryCutoffBO model = new();
+    List<DeliveryCutoffBO> allCutoffs = new();
+    DateTime? selectedTimeSpan;
+    IEnumerable<string> selectedValues;
+    IEnumerable<CommonDropdownBO> cutoffTypes;
+    int cutoffTypeId = 1;
+    bool dateChanged = false;
+    DateTime? initialDate = null;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetCutoffTypes();
+        await GetAllCutoffDetails();
+        OnTypeChange(1);
+    }
+
+    async Task GetCutoffTypes()
+    {
+        cutoffTypes = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>("/common/GetCutoffTypes");
+    }
+
+    async Task GetAllCutoffDetails()
+    {
+        allCutoffs = (await _http.GetAllRecords<IEnumerable<DeliveryCutoffBO>>($"/cutoff/GetCutoffDetails?companyId={_state.CompanyId}")).ToList();
+    }
+
+    async Task UpdateCutoffDetails()
+    {
+
+        if (model.Id == 0)
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+
+        model.CompanyId = _state.CompanyId;
+        model.CutoffTypeId = (byte)cutoffTypeId;
+        model.PermittedDeliveryDays = string.Join(',', selectedValues);
+        model.CutoffTime = (TimeSpan)Convert.ToDateTime(selectedTimeSpan).TimeOfDay;
+
+        loading.ShowLoading();
+        var res = await _http.PostRequest<BaseResponseBO>("/cutoff/UpdateCutoffDetails", model);
+
+        if (res.IsSuccess)
+        {
+            model = new();
+            await GetAllCutoffDetails();
+            OnTypeChange(1);
+            notification.Severity = NotificationSeverity.Success;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        loading.StopLoading();
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    void OnTypeChange(object val)
+    {
+        if (val != null)
+        {
+            var typeId = Convert.ToByte(val);
+
+            var res = allCutoffs.FirstOrDefault(x => x.CutoffTypeId == typeId);
+
+            if (res != null)
+            {
+                model = res;
+                selectedTimeSpan = DateTime.Now.Date + model.CutoffTime;
+                cutoffTypeId = model.CutoffTypeId;
+                selectedValues = model.PermittedDeliveryDays != null ? model.PermittedDeliveryDays.Split(',') : null;
+                initialDate = model.CutoffDate ?? DateTime.Now;
+                CalculateDate();
+            }
+            else
+            {
+                model = new();
+                selectedTimeSpan = null;
+                selectedValues = null;
+            }
+        }
+    }
+
+    void OnTimeChange(DateTime? time)
+    {
+        CalculateDate();
+    }
+
+    void CalculateDate()
+    {
+        // calculate only if the permitted days are selected
+        if (selectedValues.Count() > 0)
+        {
+            var timespan = (TimeSpan)Convert.ToDateTime(selectedTimeSpan).TimeOfDay;
+            var deliverydate = DateTime.Now.GetNextDeliveryDate(timespan, selectedValues, model.IsSameDayDelivery);
+
+            if (deliverydate.ToShortDateString() != initialDate.Value.ToShortDateString())
+            {
+                dateChanged = true;
+            }
+            else
+            {
+                dateChanged = false;
+            }
+
+            model.CutoffDate = deliverydate;
+        }
+    }
+}

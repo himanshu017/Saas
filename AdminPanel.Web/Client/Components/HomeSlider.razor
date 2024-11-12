@@ -1,0 +1,76 @@
+﻿@inject IJSRuntime jsRuntime
+@implements IDisposable
+
+<section class="home-classic-slider slider-arrow">
+    @foreach (var item in Sliders)
+    {
+        <div class="banner-part" style="background: url(@_state.ImagePath/sliders/@_state.DomainName/@item.Image) no-repeat center;">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-8 col-lg-6">
+                        <div class="banner-content">
+                            <h1>@item.Title</h1>
+                            <p>@item.Summary</p>
+                            <div class="banner-btn">
+                                @if (item?.Url?.Length > 0)
+                                {
+                                    <a class="btn btn-inline" href="@item.Url" target="_blank">
+                                        <i class="fas fa-shopping-basket"></i>
+                                        <span>Get Offer</span>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</section>
+
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    public List<SliderBO> Sliders = new();
+    [Parameter]
+    public EventCallback<bool> OnLoad { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await GetSliders();
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await Task.Delay(100);
+        await jsRuntime.InvokeVoidAsync("homeSlider");
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    async Task GetSliders()
+    {
+        var response = await _http.GetAllRecords<GenericResponse<IEnumerable<SliderBO>>>($"api/Home/GetCompanySliders?companyId={_state.CompanyId}",cts);
+
+        if (response.IsSuccess)
+        {
+            Sliders = response.Data?.ToList();
+            if(Sliders != null && Sliders.Count() > 0)
+            {
+                await OnLoad.InvokeAsync(true);
+            }
+            else
+            {
+                await OnLoad.InvokeAsync(false);
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

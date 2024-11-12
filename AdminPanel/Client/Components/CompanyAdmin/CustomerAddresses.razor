@@ -1,0 +1,271 @@
+﻿
+@if (!addressListing)
+{
+    <RadzenTemplateForm Data="@model" TItem="CustomerAddressBO" Submit="AddEditAddress">
+        <div class="row mb-2">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Address Type" />
+            </div>
+            <div class="col-md-3">
+                <RadzenDropDown Data="@addressTypes" @bind-Value="selectedAddressTypeId" TextProperty="Description" ValueProperty="Id" class="form-control" />
+            </div>
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Contact Person" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.ContactPerson" MaxLength="100" class="form-control" Name="CPerson"/>
+                <RadzenRequiredValidator Component="CPerson" Text="Contact Person name is required"/>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Email" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.Email" MaxLength="100" class="form-control" />
+            </div>
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Phone" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.PhoneNumber" MaxLength="12" class="form-control" />
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Address 1" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.Address1" MaxLength="100" class="form-control" Name="Addr1" />
+                <RadzenRequiredValidator Component="Addr1" Text="Address 1 is required" />
+            </div>
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Address 2" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.Address2" MaxLength="100" class="form-control" />
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Country" />
+            </div>
+            <div class="col-md-3">
+                <RadzenDropDown Data="@countries" class="form-control" @bind-Value="model.CountryId"
+                            Change="GetStates" TextProperty="Description" ValueProperty="Id" Name="Country"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+                <RadzenRequiredValidator Component="Country" Text="Country is required" DefaultValue="0"/>
+            </div>
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="State" />
+            </div>
+            <div class="col-md-3">
+                <RadzenDropDown Data="@states" class="form-control" @bind-Value="model.StateId" Disabled="@(model.CountryId == 0)"
+                            Change="GetCities" TextProperty="Description" ValueProperty="Id" Name="State"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+                <RadzenRequiredValidator Component="State" Text="State is required" DefaultValue="0"/>
+            </div>
+        </div>
+        <div class="row mb-2">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="City" />
+            </div>
+            <div class="col-md-3">
+                <RadzenDropDown Data="@cities" class="form-control" @bind-Value="model.CityId" Disabled="@(model.StateId == 0)"
+                            TextProperty="Description" ValueProperty="Id" Name="City"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+                <RadzenRequiredValidator Component="City" Text="City is required" DefaultValue="0"/>
+            </div>
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="County/Suburb" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.County" MaxLength="100" class="form-control" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="align-items-center d-flex col-md-3">
+                <RadzenLabel Text="Postcode" />
+            </div>
+            <div class="col-md-3">
+                <RadzenTextBox @bind-Value="model.PostalCode" MaxLength="10" class="form-control" Name="PCode"/>
+                <RadzenRequiredValidator Component="PCode" Text="Postal code is required" />
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-lg-6">
+                <RadzenButton class="w-100" Text='@(model.Id == 0 ? "Save Address":"Update Address")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+            </div>
+            <div class="col-lg-6">
+                <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => addressListing = true)" />
+            </div>
+        </div>
+    </RadzenTemplateForm>
+}
+else
+{
+    <RadzenButton Text="Add" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="@AddNew" class="mb-2" />
+    <RadzenDataGrid TItem="CustomerAddressBO" Data="@allAddresses">
+        <Columns>
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Property="ContactPerson" Title="Contact" />
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Property="AddressTypeName" Title="Type" />
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Title="Address">
+                <Template Context="row">
+                    <p class="m-0">@($"{row.Address1}, {row.Address2}")</p>
+                    <p class="m-0">@($"{row.CityName}, {row.StateName}")</p>
+                    <p class="m-0">@($"{row.CountryName}, {row.PostalCode}")</p>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Property="Email" Title="Email" />
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Property="PhoneNumber" Title="Phone" Width="100px" />
+            <RadzenDataGridColumn TItem="CustomerAddressBO" Title="" Width="100px">
+                <Template Context="row">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="edit" Click="@(() => EditMode(row))" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Click="@(() => DeleteAddress(row))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 4000 };
+    [Parameter]
+    public long CustomerId { get; set; }
+    CustomerAddressBO model = new();
+    IEnumerable<CustomerAddressBO> allAddresses;
+
+    IEnumerable<CommonDropdownBO> addressTypes;
+    IEnumerable<CommonDropdownBO> countries;
+    IEnumerable<CommonDropdownBO> states;
+    IEnumerable<CommonDropdownBO> cities;
+
+    int selectedAddressTypeId = 2;
+    bool addressListing = true;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetAllAddresses();
+        await GetAddressTypes();
+        await GetAllCountries();
+    }
+
+    async Task GetAddressTypes()
+    {
+        addressTypes = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>("/Common/GetAllAddressTypes");
+        StateHasChanged();
+    }
+
+    async Task GetAllCountries()
+    {
+        countries = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>("/Common/GetAllCountries");
+    }
+
+    async Task GetStates()
+    {
+        states = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/Common/GetStatesByCountry?countryId={model.CountryId}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetCities()
+    {
+        cities = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/Common/GetCitiesByState?stateId={model.StateId}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllAddresses()
+    {
+        allAddresses = await _http.GetAllRecords<IEnumerable<CustomerAddressBO>>($"/Customer/GetCustomerAddresses?customerId={CustomerId}");
+    }
+
+    async Task AddEditAddress()
+    {
+        if (model.Id == 0)
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+
+        model.AddressTypeId = (byte)selectedAddressTypeId;
+        model.CustomerId = CustomerId;
+        model.CountryName = countries.FirstOrDefault(x => x.Id == model.CountryId)?.Description;
+        model.StateName = states.FirstOrDefault(x => x.Id == model.StateId)?.Description;
+        model.CityName = cities.FirstOrDefault(x => x.Id == model.CityId)?.Description;
+        var res = await _http.PostRequest<BaseResponseBO>($"/Customer/AddEditCustomerAddress", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            notification.Summary = res.Message;
+            await GetAllAddresses();
+            addressListing = true;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+            notification.Summary = res.Message;
+        }
+
+        _notify.Notify(notification);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditMode(CustomerAddressBO row)
+    {
+        model = (CustomerAddressBO)row.Clone();
+        await GetStates();
+        await GetCities();
+        selectedAddressTypeId = (int)model.AddressTypeId;
+        addressListing = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void AddNew()
+    {
+        addressListing = false;
+        model = new();
+        selectedAddressTypeId = 0;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task DeleteAddress(CustomerAddressBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete Address",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var postData = new
+            {
+                CustomerId = CustomerId,
+                AddressId = row.Id,
+                UserId = _state.UserId
+            };
+
+            var response = await _http.PostRequest<BaseResponseBO>("/Customer/DeleteCustomerAddress", postData);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                notification.Summary = response.Message;
+                await GetAllAddresses();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+                notification.Summary = response.Message;
+            }
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+}

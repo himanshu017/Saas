@@ -1,0 +1,294 @@
+﻿@page "/OrderDetail"
+@inject IHttpService _http
+@inject IStateService _state
+@inject NavigationManager _nav
+@inject NotificationService _notify
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@implements IDisposable
+<HeadContent>
+    <link rel="stylesheet" href="theme/css/orderlist.css?v=@DateTime.Now.Ticks">
+    <link rel="stylesheet" href="theme/css/main.css?v=@DateTime.Now.Ticks">
+</HeadContent>
+
+<TitleBanner Title="Order Detail" />
+
+<!--=====================================
+                    INVOICE PART START
+        =======================================-->
+<section class="inner-section invoice-part">
+    <div class="container">
+        @if (model != null)
+        {
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="orderlist">
+                        <div class="orderlist-head">
+                            <h5>order# @model.OrderNumber</h5>
+                            <h5>order recieved</h5>
+                        </div>
+                        <div class="orderlist-body">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div class="order-track">
+                                        <ul class="order-track-list">
+                                            <li class="order-track-item active">
+                                                <i class="icofont-check"></i>
+                                                <span>recieved</span>
+                                            </li>
+                                            <li class="order-track-item">
+                                                <i class="icofont-close"></i>
+                                                <span>processed</span>
+                                            </li>
+                                            <li class="order-track-item">
+                                                <i class="icofont-close"></i>
+                                                <span>shipped</span>
+                                            </li>
+                                            <li class="order-track-item">
+                                                <i class="icofont-close"></i>
+                                                <span>delivered</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <ul class="orderlist-details">
+                                        <li>
+                                            <h6>order id</h6>
+                                            <p>@model.OrderNumber</p>
+                                        </li>
+                                        <li>
+                                            <h6>Total Item</h6>
+                                            <p>@model.OrderItems.Count() Items</p>
+                                        </li>
+                                        <li>
+                                            <h6>Order Date</h6>
+                                            <p>@(model.CreatedOn.Value.ToString("MMMM dd, yyyy hh:mm"))</p>
+                                        </li>
+                                        <li>
+                                            <h6>Delivery Date</h6>
+                                            <p>@model.DeliveryDate.ToString("MMMM dd, yyyy hh:mm")</p>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-lg-4">
+                                    <ul class="orderlist-details">
+                                        <li>
+                                            <h6>Sub Total</h6>
+                                            <p>@model.TotalWithoutTax.ToPrice(_state.CurrencyInfo)</p>
+                                        </li>
+                                        <li>
+                                            <h6>discount</h6>
+                                            <p>
+                                                @model.DiscountAmount.ToPrice(_state.CurrencyInfo)
+                                            </p>
+                                        </li>
+                                        <li>
+                                            <h6>delivery fee</h6>
+                                            <p>@model.FreightCharge.ToPrice(_state.CurrencyInfo)</p>
+                                        </li>
+                                        <li>
+                                            <h6>Total<small>(Incl. VAT)</small></h6>
+                                            <p>@model.OrderTotal.ToPrice(_state.CurrencyInfo)</p>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-lg-3">
+                                    <div class="orderlist-deliver">
+                                        <h6>Delivery location</h6>
+                                        @if (model.DelieryAddress != null && model.DelieryAddress.Count() > 0)
+                                        {
+                                            @foreach (var str in model.DelieryAddress)
+                                            {
+                                                <p>@str</p>
+                                            }
+                                        }
+
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="table-scroll pb-4">
+                                        <RadzenDataGrid GridLines="DataGridGridLines.Both" Style="max-height:500px;" @ref=grid TItem="ItemsBO" Data="@model.OrderItems"
+                                                        EditMode="DataGridEditMode.Single" RowUpdate="@AddEdit"
+                                                        SelectionMode="DataGridSelectionMode.Multiple" @bind-Value=@selectedItems AllowRowSelectOnRowClick="false">
+                                            <Columns>
+                                                <RadzenDataGridColumn Width="50px" TItem="ItemsBO" Title="#" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                                                    <Template Context="data">
+                                                        @(model.OrderItems.ToList().IndexOf(data) + 1)
+                                                    </Template>
+                                                </RadzenDataGridColumn>
+                                                <RadzenDataGridColumn TItem="ItemsBO" Property="ProductName" Title="Name" TextAlign="TextAlign.Center" />
+                                                <RadzenDataGridColumn TItem="ItemsBO" Property="UnitName" Title="Unit" TextAlign="TextAlign.Center" Width="120px">
+                                                    <Template Context="row">
+                                                        <span>@row.UnitName</span>
+                                                    </Template>
+                                                    <EditTemplate Context="row">
+
+                                                        <RadzenDropDown Data="@allunits" class="form-control" @bind-Value="row.UnitId"
+                                                                        TextProperty="Name" ValueProperty="UnitId" TValue="long" Name="PUnit"
+                                                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" AllowVirtualization="true" />
+                                                    </EditTemplate>
+                                                </RadzenDataGridColumn>
+                                                <RadzenDataGridColumn TItem="ItemsBO" Property="Quantity" Title="Quantity">
+                                                    <Template Context="row">
+                                                        <span>@row.Quantity</span>
+                                                    </Template>
+                                                    <EditTemplate Context="row">
+                                                        <RadzenNumeric @bind-Value="row.Quantity" />
+                                                    </EditTemplate>
+                                                </RadzenDataGridColumn>
+                                                @*<RadzenDataGridColumn TItem="ItemsBO" Property="Quantity" Title="Qty" TextAlign="TextAlign.Center" Width="90px" />*@
+                                                <RadzenDataGridColumn TItem="ItemsBO" Property="Price" Title="Unit Price" TextAlign="TextAlign.Right" Width="100px">
+                                                    <Template Context="row">
+                                                        @row.Price.ToPrice(_state.CurrencyInfo)
+                                                    </Template>
+                                                </RadzenDataGridColumn>
+                                                <RadzenDataGridColumn TItem="ItemsBO" Property="Price" Title="Total Price" TextAlign="TextAlign.Right" Width="100px">
+                                                    <Template Context="row">
+                                                        @(((decimal)row.Quantity * row.Price).ToPrice(_state.CurrencyInfo))
+                                                    </Template>
+                                                </RadzenDataGridColumn>
+                                                @if (model.CreatedOn.Value < model.DeliveryDate)
+                                                {
+                                                    <GridControls TItem="ItemsBO" Grid="grid" DeleteRow="Delete" Width="120px" />
+                                                }
+                                            </Columns>
+                                        </RadzenDataGrid>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12 text-center mt-5">
+                    <div class="back-home">
+                        <a href="/Orders">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+<!--=====================================
+            INVOICE PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "orderId")]
+    public long OrderId { get; set; }
+
+    [Parameter]
+    public bool IsFromCart { get; set; } = true;
+    AlertBO alert = new AlertBO();
+    OrderDetailBO model = new OrderDetailBO();
+    RadzenDataGrid<ItemsBO>? grid;
+    IList<ItemsBO>? selectedItems;
+    List<ProductUnitsBO>? prodUnits = new();
+    IEnumerable<UnitOfMeasureBO> allunits;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetOrderDetails();
+        await GetAllUnitOfMeasure(_state.CompanyId);
+    }
+
+    async Task GetAllUnitOfMeasure(long id)
+    {
+        allunits = await _httpClient.GetFromJsonAsync<IEnumerable<UnitOfMeasureBO>>($"Categories/GetAllUnitofMeasures?cid={id}", cts.Token);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetOrderDetails()
+    {
+        try
+        {
+            var res = await _http.GetAllRecords<GenericResponse<OrderDetailBO>>($"Orders/GetOrderDetails?orderId={OrderId}");
+            if (res.IsSuccess)
+            {
+                model = res.Data;
+                StateHasChanged();
+            }
+
+        }
+        finally
+        {
+        }
+    }
+
+    async Task AddEdit(ItemsBO row)
+    {
+        if (row.Id == 0)
+        {
+            row.CreatedBy = (long)_state.UserId;
+            row.CreatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            row.ModifiedBy = (long)_state.UserId;
+            row.ModifiedOn = DateTime.UtcNow;
+        }
+        row.CompanyId = _state.CompanyId;
+        var request = await _httpClient.PostAsJsonAsync("Orders/UpdateOrderItems", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        else
+        {
+            alert.Visible = true;
+            alert.Message = await request.Content.ReadAsStringAsync();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+    async Task Delete(ItemsBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Delete {row.ProductName}",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.PostAsJsonAsync("Categories/Delete", row, cts.Token);
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await grid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = await request.Content.ReadAsStringAsync();
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+    }
+}

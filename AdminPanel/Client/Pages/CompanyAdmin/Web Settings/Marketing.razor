@@ -1,0 +1,442 @@
+﻿@page "/Marketing"
+
+<PageHeader Title="Targeted Marketing" />
+<Loading @ref="loading" />
+
+@if (listing)
+{
+    <RadzenButton Text="Add" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="@AddNew" class="mb-2" />
+    <RadzenDataGrid @ref="grid" TItem="TargetMarketingBO" Data="@allRecords" Responsive="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="TargetMarketingBO" Property="GroupName" Title="Target Type">
+                <Template Context="row">
+                    @if (row.GroupId > 0)
+                    {
+                        <span><b>Group:</b> @row.GroupName</span>
+                    }
+                    else
+                    {
+                        <snap><b>Customer:</b> @row.CustomerName</snap>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="TargetMarketingBO" Title="Type" Width="80px">
+                <Template Context="row">
+                    <span>@Enum.GetName(typeof(MarketingTypes), row.MarketingTypeId)</span>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="TargetMarketingBO" Property="Title" Title="Title" />
+
+            <RadzenDataGridColumn TItem="TargetMarketingBO" Property="IsActive" Title="Active" Width="100px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="TargetMarketingBO" Title="" Width="100px">
+                <Template Context="row">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="edit" Click="@(() => EditMode(row))" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Click="@(() => DeleteRecord(row))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <RadzenCard>
+        <RadzenTemplateForm TItem="TargetMarketingBO" Data="model" Submit="AddUpdate">
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Marketing Type" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenRadioButtonList @bind-Value=@type TValue="int" Change="OnTypeChange">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="PDF" Value="2" />
+                            <RadzenRadioButtonListItem Text="Image" Value="1" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Recipient Type" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenRadioButtonList @bind-Value=@recipientType TValue="int">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Group" Value="1" />
+                            <RadzenRadioButtonListItem Text="Customer" Value="2" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                </div>
+            </div>
+            @if (recipientType == (byte)MarketingTarget.Group)
+            {
+                <div class="row mb-3">
+                    <div class="align-items-center d-flex col-md-3">
+                        <RadzenLabel Text="Group" />
+                    </div>
+                    <div class="col-md-7">
+                        <RadzenDropDown @bind-Value="model.GroupId" Data="@allGroups" TextProperty="Name" ValueProperty="Id" class="form-control" Name="Group" />
+                        <RadzenRequiredValidator Component="Group" Text="Group is required" />
+                    </div>
+                    <div class="col-md-2">
+                        <RadzenButton Text="Manage" class="w-100" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@ManageGroup" />
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row mb-3">
+                    <div class="align-items-center d-flex col-md-3">
+                        <RadzenLabel Text="Customer" />
+                    </div>
+                    <div class="col-md-9">
+
+                        <CustomerDDL @bind-Value="model.CustomerId" Selected="@(model.CustomerName ?? "")" />
+
+                        @*<RadzenDropDown @bind-Value="model.CustomerId" Data="@allCustomers" TextProperty="Description" ValueProperty="IdLong"
+                            AllowClear="true" AllowFiltering="true" Placeholder="@selectedCustomerName"
+                            AllowVirtualization="true" Count="@totalCustCount" LoadData="@LoadCustomersVirtualization"
+                            class="form-control" Name="Customer" Change="OnChange"/>*@
+
+                        @if (showCustError && model.CustomerId == null)
+                        {
+                            <div class="rz-message rz-messages-error ">Customer is required</div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Title" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextBox @bind-Value="model.Title" class="w-100" Name="Title" />
+                    <RadzenRequiredValidator Component="Title" Text="Title is required" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="File" />
+                </div>
+                <div class="col-md-9">
+                    <InputFile OnChange="OnInputFileChange" @bind-Value="model.FileName" accept="@acceptTypes" class="@(showError ? "form-control invalid" : "form-control")" @onclick="@(() => model.UploadedFile = null)" />
+                    @if (model.UploadedFile != null)
+                    {
+                        <div class="mt-2">
+                            @if (type == (byte)MarketingTypes.Pdf)
+                            {
+                                <a href="@src" target="_blank"><i class="fa fa-3x fa-light fa-file-pdf text-danger"></i></a>
+                            }
+                            else
+                            {
+                                <a href="@src" download="@model.UploadedFile.FileName">
+                                    <img class="rounded m-1" @key="model.UploadedFile.FileName" src="@src" height="100" />
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        @if (showError)
+                        {
+                            <div class="rz-message rz-messages-error">File is required</div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Products" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenButton Text="Choose Products" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Primary" Click="@(() => ShowMultiSelect(false))" />
+                    <RadzenButton Icon="close" ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => model.ProductIds = null)" />
+                    <span>@(model.ProductIds?.Count() > 0 ? $"{model.ProductIds?.Count()} Selected" : "0 Selected")</span>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Active" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenSwitch @bind-Value="model.IsActive" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-lg-8"></div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='@(model.Id == 0 ? "Save Record":"Update Record")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+                </div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => listing = true)" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+}
+
+@code {
+    RadzenDataGrid<TargetMarketingBO> grid;
+
+    NotificationMessage notification = new NotificationMessage() { Duration = 2000 };
+    Loading loading;
+    TargetMarketingBO model = new();
+    IEnumerable<GroupsBO> allGroups;
+    IEnumerable<CommonDropdownBO> allProducts;
+    IEnumerable<TargetMarketingBO> allRecords;
+    int type = 2;
+    int recipientType = 1;
+    string acceptTypes = "application/pdf";
+    bool listing = true;
+    IReadOnlyList<IBrowserFile> selectedFiles;
+    string src;
+    bool showError = false;
+    bool showCustError = false;
+    int totalProdCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        loading.ShowLoading();
+
+        await GetAllGroups();
+        await GetAllRecords();
+        await GetAllProducts();
+        loading.StopLoading();
+    }
+
+    async Task GetAllRecords()
+    {
+        allRecords = await _http.GetAllRecords<IEnumerable<TargetMarketingBO>>($"/Marketing/GetAllRecords?companyId={_state.CompanyId}");
+    }
+
+    async Task GetAllProducts(string query = "")
+    {
+        loading.ShowLoading();
+        allProducts = await _http.GetAllRecords<IEnumerable<CommonDropdownBO>>($"/common/GetAllProducts?companyId={_state.CompanyId}&{query}");
+        if (allProducts.Count() > 0)
+        {
+            totalProdCount = allProducts.ToList()[0].TotalRecords;
+        }
+        loading.StopLoading();
+    }
+
+    async Task LoadProductsVirtualization(LoadDataArgs args)
+    {
+        Console.WriteLine($"filter={args.Filter}");
+        await GetAllProducts($"pageNumber={args.Skip.Value}&pageSize={args.Top.Value}&searchString={args.Filter}");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task GetAllGroups()
+    {
+        allGroups = await _http.GetAllRecords<IEnumerable<GroupsBO>>($"/Group/GetAllGroups?scopeId={(byte)GroupScopes.Marketing}&companyId={_state.CompanyId}");
+    }
+
+    void OnTypeChange(int type)
+    {
+        if (type == (byte)MarketingTypes.Image)
+        {
+            acceptTypes = "image/png, image/gif, image/jpeg";
+        }
+        else
+        {
+            acceptTypes = "application/pdf";
+        }
+    }
+
+    private async void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles(1);
+
+        foreach (var file in selectedFiles)
+        {
+            if (file.Size > 4000000)
+            {
+                Console.WriteLine("Filesize can not be greated than 4MB");
+                return;
+            }
+            Stream stream = file.OpenReadStream();
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            stream.Close();
+            model.UploadedFile = new UploadFileBO();
+            model.UploadedFile.FileName = file.Name;
+            model.UploadedFile.FileContent = ms.ToArray();
+            model.UploadedFile.KeepExisting = false;
+            showError = false;
+            ms.Close();
+
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(buffer);
+            var imageDataUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            src = imageDataUrl;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async void AddNew()
+    {
+        listing = false;
+        model = new();
+        type = (byte)MarketingTypes.Pdf;
+        recipientType = (byte)MarketingTarget.Group;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditMode(TargetMarketingBO row)
+    {
+        showError = false;
+        model = (TargetMarketingBO)row.Clone();
+        src = $"/Marketing/{_state.DomainName}/{model.FileName}";
+        type = (int)model.MarketingTypeId;
+
+        if (model.GroupId > 0)
+        {
+            recipientType = (byte)MarketingTarget.Group;
+        }
+        else
+        {
+            recipientType = (byte)MarketingTarget.Customer;
+        }
+        model.UploadedFile = new UploadFileBO();
+        model.UploadedFile.FileName = model.FileName;
+        model.UploadedFile.KeepExisting = true;
+        listing = false;
+        acceptTypes = type == (byte)MarketingTypes.Pdf ? "application/pdf" : "image/png, image/gif, image/jpeg";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task ManageGroup()
+    {
+        var res = await _dialog.OpenAsync<ManageGroups>($"Manage Groups",
+                 new Dictionary<string, object>() { { "GroupScopeId", (byte)GroupScopes.Marketing } },
+                 new DialogOptions()
+                     {
+                         Width = "75%",
+                         Height = "550px"
+                     });
+
+        await GetAllGroups();
+    }
+
+    async Task AddUpdate()
+    {
+        if (model.UploadedFile == null)
+        {
+            showError = true;
+            return;
+        }
+
+        if (model.Id > 0)
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+
+        if (recipientType == (byte)MarketingTarget.Customer)
+        {
+            model.GroupId = null;
+            if (model.CustomerId == null)
+            {
+                showCustError = true;
+                return;
+            }
+            else
+            {
+                showCustError = false;
+            }
+        }
+        else
+        {
+            model.CustomerId = null;
+        }
+
+        model.CompanyId = _state.CompanyId;
+        model.MarketingTypeId = (byte)type;
+        model.DomainName = _state.DomainName;
+
+        loading.ShowLoading();
+        var res = await _http.PostRequest<BaseResponseBO>("/Marketing/AddUpdateRecords", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            await GetAllRecords();
+            listing = true;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+        loading.StopLoading();
+    }
+
+    async Task DeleteRecord(TargetMarketingBO row)
+    {
+        loading.ShowLoading();
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete record",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/Marketing/DeleteRecord", row.Id);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                await GetAllRecords();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            notification.Summary = response.Message;
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+        loading.StopLoading();
+    }
+
+    async Task ShowMultiSelect(bool isCustomer)
+    {
+        var res = await _dialog.OpenAsync<MultiSelection>(isCustomer ? "Select Customers" : "Select Products",
+               new Dictionary<string, object>() { { "IsCustomer", isCustomer },
+                                                  { "PreviousSelection", model.ProductIds }},
+           new DialogOptions()
+               {
+                   Width = "65%"
+               });
+
+        if (res != null)
+        {
+            model.ProductIds = res;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,107 @@
+﻿@implements IDisposable
+
+<!--=====================================
+            NICHE PART START
+=======================================-->
+<section class="section niche-part">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="section-heading">
+                    <h2>Browse by Top Niche</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <ul class="nav nav-tabs">
+                    @{
+                        int ctr = 0;
+                    }
+                    @if (categoryGroup != null)
+                    {
+                        @foreach (var cat in categoryGroup)
+                        {
+                            <li>
+                                <a href="#tab_@cat.First().MainCategoryId" class="@(ctr == 0 ? "tab-link active":"tab-link")" data-bs-toggle="tab">
+                                    <i class="icofont-price"></i>
+                                    <span>@cat.First().MainCategoryName</span>
+                                </a>
+                            </li>
+                            ctr++;
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+        @if (categoryGroup != null)
+        {
+            int itmCtr = 0;
+
+            @foreach (var cat in categoryGroup)
+            {
+                var catProds = cat.ToList();
+                <div class="tab-pane fade show @(itmCtr == 0 ? "active":"")" id="tab_@cat.First().MainCategoryId">
+                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+                        @foreach (var prod in catProds)
+                        {
+                            <ProductDisplay Prod="prod" />
+                        }
+                    </div>
+                </div>
+                itmCtr++;
+            }
+        }
+     
+        @* <div class="row">
+            <div class="col-lg-12">
+                <div class="section-btn-25">
+                    <a href="shop-4column.html" class="btn btn-outline">
+                        <i class="fas fa-eye"></i>
+                        <span>show more</span>
+                    </a>
+                </div>
+            </div>
+        </div> *@
+    </div>
+</section>
+<!--=====================================
+            NICHE PART END
+=======================================-->
+@code {
+    private CancellationTokenSource cts = new CancellationTokenSource();
+    IEnumerable<ProductListBO> products;
+    GetProductModel model = new GetProductModel();
+    List<IGrouping<long?, ProductListBO>> categoryGroup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+
+        await GetFeaturedCategoryProducts();
+    }
+
+    async Task GetFeaturedCategoryProducts()
+    {
+        model.CompanyId = _state.CompanyId;
+        model.PageSize = 10;
+        model.PageNumber = 0;
+        var response = await _http.PostRequest<GenericResponse<IEnumerable<ProductListBO>>>($"api/Home/GetFeaturedCategoryProducts", model,cts);
+
+        if (response.IsSuccess)
+        {
+            products = response.Data;
+
+            categoryGroup = products.GroupBy(g => g.MainCategoryId).ToList();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    
+    public void Dispose()
+    {
+        _http.DisposeToken(cts);
+    }
+}

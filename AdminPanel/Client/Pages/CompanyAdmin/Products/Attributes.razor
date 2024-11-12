@@ -1,0 +1,135 @@
+﻿@page "/ProductAttributes"
+@inject HttpClient _httpClient
+@inject DialogService dialogService
+@inject IStateService _state
+
+<PageHeader Title="Product Attributes" />
+<AlertMessage AlertModel="@alert" />
+
+<RadzenCard>
+    <GridInsertButton Grid="grid" TItem="AttributeBO" OnCreateItem="@(() => new AttributeBO())" Disabled="@(disabled)" />
+
+    <RadzenDataGrid @ref="grid" TItem="AttributeBO" Data="@allAttributes"
+                    EditMode="DataGridEditMode.Single" RowUpdate="@AddEdit" RowCreate="@AddEdit">
+        <Columns>
+            <RadzenDataGridColumn TItem="AttributeBO" Property="Name" Title="Name" Width="250px">
+                <Template Context="row">
+                    <span>@row.Name</span>
+                </Template>
+                <EditTemplate Context="row">
+                    <RadzenTextBox @bind-Value="row.Name" class="form-control" MaxLength="100" Name="AName" />
+                    <RadzenRequiredValidator Component="AName" Text="Name is required" Popup="true" Style="position: absolute" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AttributeBO" Property="Description" Title="Description">
+                <Template Context="row">
+                    <span>@row.Description</span>
+                </Template>
+                <EditTemplate Context="row">
+                    <RadzenTextArea  @bind-Value="row.Description" class="form-control" MaxLength="500" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AttributeBO" Property="IsActive" Title="Active" Width="150px">
+                <Template Context="row">
+                    <RadzenBadge BadgeStyle="@((row.IsActive ?? false )? BadgeStyle.Success : BadgeStyle.Warning)" IsPill="true" Text="@((row.IsActive ?? false) ? "Yes" : "No")" />
+                    <ToggleAttributeState Id="row.Id" Type="ToggleAttrType.Attribute" IsActive="row.IsActive" OnUpdate="OnToggleUpdate" />
+                </Template>
+                <EditTemplate>
+
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <GridControls TItem="AttributeBO" AllowDelete="false" Grid="grid" DeleteRow="Delete" Width="120px" OnAction="@(() => disabled = false)" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    RadzenDataGrid<AttributeBO>? grid;
+    IEnumerable<AttributeBO>? allAttributes;
+    AlertBO alert = new();
+    bool disabled = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(100);
+        await GetAll();
+    }
+
+    async Task GetAll()
+    {
+        allAttributes = await _httpClient.GetFromJsonAsync<IEnumerable<AttributeBO>>($"Attribute/GetAllAttributes?companyId={_state.CompanyId}&showAll=true");
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEdit(AttributeBO row)
+    {
+        row.CompanyId = _state.CompanyId;
+        row.CreatedOn = DateTime.UtcNow;
+        row.CreatedBy = _state.UserId;
+        if(row.Id == 0)
+        {
+            row.IsActive = true;
+        }
+        var request = await _httpClient.PostAsJsonAsync("Attribute/AddUpdateAttribute", row);
+        if (request.IsSuccessStatusCode)
+        {
+            var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+            if (response.IsSuccess)
+            {
+                await GetAll();
+                await grid.Reload();
+            }
+            else
+            {
+                alert.Visible = true;
+                alert.Message = response.Message;
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task Delete(AttributeBO row)
+    {
+        var confirm = await dialogService.Confirm("Are you sure?", $"Disable attribute {row.Name}",
+                      new ConfirmOptions()
+                          {
+                              OkButtonText = "Yes",
+                              CancelButtonText = "No"
+                          });
+
+        if (confirm ?? false)
+        {
+            var request = await _httpClient.DeleteAsync($"Attribute/DeleteAttribute?id={row.Id}");
+            if (request.IsSuccessStatusCode)
+            {
+                var response = JsonConvert.DeserializeObject<BaseResponseBO>(request.Content.ReadAsStringAsync().Result);
+
+                if (response.IsSuccess)
+                {
+                    await GetAll();
+                    await grid.Reload();
+                }
+                else
+                {
+                    alert.Visible = true;
+                    alert.Message = response.Message;
+                }
+            }
+        }
+    }
+
+    async void OnToggleUpdate(BaseResponseBO res)
+    {
+        if (res.IsSuccess)
+        {
+            _notifyS.SuccessMsg("", $"Attribute updated");
+            await GetAll();
+        }
+        else
+        {
+            _notifyS.ErrorMsg("", res.Message);
+        }
+    }
+}

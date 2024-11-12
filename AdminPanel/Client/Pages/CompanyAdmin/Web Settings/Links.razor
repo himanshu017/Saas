@@ -1,0 +1,186 @@
+﻿@page "/Links"
+
+<PageHeader Title="Links" />
+<Loading @ref="loading" />
+
+@if (!listing)
+{
+    <RadzenCard>
+        <EditForm Model="@model" OnValidSubmit="AddEditLink">
+            <DataAnnotationsValidator />
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Title" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextBox @bind-Value="model.Title" class="form-control" MaxLength="100" />
+                    <ValidationMessage For="() => model.Title" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Url" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextBox @bind-Value="model.Url" MaxLength="260" class="form-control" />
+                    <ValidationMessage For="() => model.Url" />
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Description" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenTextArea @bind-Value="model.Description" class="form-control" MaxLength="200" />
+                    <ValidationMessage For="() => model.Description" />
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="align-items-center d-flex col-md-3">
+                    <RadzenLabel Text="Active" />
+                </div>
+                <div class="col-md-9">
+                    <RadzenSwitch @bind-Value="model.IsActive" />
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-lg-8"></div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='@(model.Id == 0 ? "Save Link":"Update Link")' ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" />
+                </div>
+                <div class="col-lg-2">
+                    <RadzenButton class="w-100" Text='Cancel' ButtonType="ButtonType.Button" ButtonStyle="ButtonStyle.Secondary" Click="@(() => listing = true)" />
+                </div>
+            </div>
+        </EditForm>
+    </RadzenCard>
+}
+else
+{
+    <RadzenButton Text="Add" Icon="add_circle_outline" ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Button" Click="@AddNew" class="mb-2" />
+    <RadzenDataGrid TItem="PostedLinksBO" Data="@allLinks">
+        <Columns>
+            <RadzenDataGridColumn TItem="PostedLinksBO" Property="Title" Title="Title" />
+            <RadzenDataGridColumn TItem="PostedLinksBO" Property="Descripton" Title="Description">
+                <Template Context="row">
+                    <p>@row.Description</p>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PostedLinksBO" Property="Url" Title="Link">
+                <Template Context="row">
+                    <a href="@row.Url" target="_blank">@row.Url</a>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PostedLinksBO" Property="IsActive" Title="Active" Width="100px">
+                <Template Context="row">
+                    @*<RadzenSwitch @bind-Value="@row.IsActive" Disabled="true" />*@
+                    <RadzenBadge BadgeStyle="@(row.IsActive ? BadgeStyle.Success : BadgeStyle.Danger)" IsPill="true" Text="@(row.IsActive ? "Active" : "In-Active")" />
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="PostedLinksBO" Title="" Width="100px">
+                <Template Context="row">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="edit" Click="@(() => EditMode(row))" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Icon="delete" Click="@(() => DeleteLink(row))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+@code {
+    NotificationMessage notification = new NotificationMessage() { Duration = 3000 };
+    PostedLinksBO model = new();
+    IEnumerable<PostedLinksBO> allLinks;
+    Loading loading;
+    bool listing = true;
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Task.Delay(10);
+        await GetLinks();
+    }
+
+    async Task GetLinks()
+    {
+        loading.ShowLoading();
+        allLinks = await _http.GetAllRecords<IEnumerable<PostedLinksBO>>($"/common/GetCompanyPostedLinks?companyId={_state.CompanyId}");
+        loading.StopLoading();
+    }
+
+    async void AddNew()
+    {
+        listing = false;
+        model = new();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task EditMode(PostedLinksBO row)
+    {
+        model = (PostedLinksBO)row.Clone();
+        listing = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task AddEditLink()
+    {
+        loading.ShowLoading();
+
+        if (model.Id > 0)
+        {
+            model.ModifiedBy = _state.UserId;
+            model.ModifiedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            model.CreatedBy = _state.UserId;
+            model.CreatedOn = DateTime.UtcNow;
+        }
+        model.CompanyId = _state.CompanyId;
+
+        var res = await _http.PostRequest<BaseResponseBO>("/Common/AddUpdateCompanyPostedLinks", model);
+
+        if (res.IsSuccess)
+        {
+            notification.Severity = NotificationSeverity.Success;
+            await GetLinks();
+            listing = true;
+        }
+        else
+        {
+            notification.Severity = NotificationSeverity.Error;
+        }
+
+        notification.Summary = res.Message;
+        _notify.Notify(notification);
+        loading.StopLoading();
+    }
+
+    async Task DeleteLink(PostedLinksBO row)
+    {
+        var confirm = await _dialog.Confirm("Are you sure?", $"Delete Link",
+                    new ConfirmOptions()
+                        {
+                            OkButtonText = "Yes",
+                            CancelButtonText = "No"
+                        });
+        if (confirm ?? false)
+        {
+            var response = await _http.PostRequest<BaseResponseBO>("/common/DeleteCompanyPostedLinks", row.Id);
+
+            if (response.IsSuccess)
+            {
+                notification.Severity = NotificationSeverity.Success;
+                await GetLinks();
+            }
+            else
+            {
+                notification.Severity = NotificationSeverity.Error;
+            }
+
+            notification.Summary = response.Message;
+            _notify.Notify(notification);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}
